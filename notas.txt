@@ -1,0 +1,8 @@
+PASOS PARA SERVIDOR XAMPP EN ENTORNO DE DESARROLLO, Y APACHE EN ENTORNO DE PRODUCCIÓN:
+- Se instala node js, se instala express, se instala pm2, se instala dotenv
+- Se configura apache para servir como proxy inverso
+- Se crea dos virtual host en apache, uno para localhost y sus carpetas en php, otro que apunte al proyecto en nodejs... Siempre en el servidor real se crearán virtual hosts para cada proyecto pues irá asociado a un dominio
+-Se crea los host en windows para la asignación de dominios, en la ruta aproximada de system32/drivers/etc/host
+-Se configura el servidor del proyecto nodejs para poder servir archivos estáticos y módulos de la aplicación
+-Se instala la biblioteca de notion
+-Se debe asociar los certificados https tanto en express como en apache
