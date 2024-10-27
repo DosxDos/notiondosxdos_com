@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APIREST INTERMEDIA NOTION-DOSXDOS</title>
+    <style>
+        .red {
+            color: red;
+        }
+
+        .blue {
+            color: blue;
+        }
+
+        .green {
+            color: green;
+        }
+
+        .yellow {
+            color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 id="my-heading">BIENVENID@ A LA APIREST NOTION-DOSXDOS</h1>
+</body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const heading = document.getElementById('my-heading');
+        const classes = ['red', 'blue', 'green', 'yellow'];
+        let index = 0;
+
+        setInterval(() => {
+            // Remove the current class
+            heading.classList.remove(...classes);
+            // Add the new class
+            heading.classList.add(classes[index]);
+            // Update the index
+            index = (index + 1) % classes.length;
+        }, 1000);
+    });
+</script>
+
+</html>
