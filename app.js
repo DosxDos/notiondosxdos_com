@@ -5,6 +5,7 @@ const getHandler = require('./getHandler');
 const postHandler = require('./postHandler');
 const putHandler = require('./putHandler');
 const deleteHandler = require('./deleteHandler');
+const { exec } = require('child_process');
 
 // Cargar variables de entorno desde el archivo .env
 dotenv.config();
@@ -53,6 +54,50 @@ app.post('/api', async (req, res) => {
     handleErrorResponse(res, error);
   }
 });
+
+// Ruta GET para el webhook de GitHub
+app.get('/webhookgithub', (req, res) => {
+  const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
+
+  /*
+  let body = '';
+
+  // Leer el payload del webhook
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
+  */
+
+  req.on('end', () => {
+    // Ejecutar el comando git pull si el payload es válido
+    /*
+    if (!body) {
+      res.status(400).send('Bad request: no payload received.');
+      return;
+    }
+    */
+
+    exec(`cd /d ${projectDir} && git pull`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error ejecutando git pull: ${stderr}`);
+        const response = [];
+        response[0] = true;
+        response[1] = `Error ejecutando git pull: ${stderr}`;
+        response[2] = 500;
+        res.status(response[2]).json(response);
+      } else {
+        console.log(`Salida de git pull: ${stdout}`);
+        const response = [];
+        response[0] = true;
+        response[1] = `Salida de git pull: ${stdout}`;
+        response[2] = 200;
+        res.status(response[2]).json(response);
+      }
+
+    });
+  });
+});
+
 
 // Ruta PUT que recibe un cuerpo JSON
 app.put('/api', async (req, res) => {
