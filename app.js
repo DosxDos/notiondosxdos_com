@@ -59,30 +59,29 @@ function executeGitPull(res) {
       console.error(`Error ejecutando git pull: ${stderr}`);
       const response = [false, `Error ejecutando git pull: ${stderr || 'Error desconocido'}`, 500];
       res.status(500).json(response);
-      return;
+    } else {
+      console.log(`Salida de git pull: ${stdout}`);
+      // Si git pull tiene éxito, llama a la función para reiniciar PM2
+      executePm2Restart(res, stdout);
     }
-
-    console.log(`Salida de git pull: ${stdout}`);
-    // Si git pull tiene éxito, llama a la función para reiniciar PM2
-    executePm2Restart(res, stdout);
   });
 }
 
 // Función para ejecutar pm2 restart después de git pull
 function executePm2Restart(res, gitOutput) {
+  const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
   const pm2Path = 'C:\\Users\\Andres\\AppData\\Roaming\\npm\\pm2.cmd';
 
-  exec(`cmd /c "pm2 restart 0"`, (error, stdout, stderr) => {
+  exec(`powershell -Command "& {cd '${projectDir}'; & '${pm2Path} restart 0'}"`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error ejecutando pm2 restart: ${stderr}`);
       const response = [false, `Error ejecutando pm2 restart: ${stderr || 'Error desconocido'}`, 500];
       res.status(500).json(response);
-      return;
+    } else {
+      console.log(`Salida de pm2 restart: ${stdout}`);
+      const response = [true, `Salida de git pull: ${gitOutput}\nSalida de pm2 restart: ${stdout}`, 200];
+      res.status(200).json(response);
     }
-
-    console.log(`Salida de pm2 restart: ${stdout}`);
-    const response = [true, `Salida de git pull: ${gitOutput}\nSalida de pm2 restart: ${stdout}`, 200];
-    res.status(200).json(response);
   });
 }
 
