@@ -46,43 +46,61 @@ const { exec } = require('child_process');
 
 // Ruta GET para el webhook de GitHub
 app.get('/webhookgithub', (req, res) => {
-  executeGitPull(res);
+  ejecutarWebHook();
 });
 
-// Función para ejecutar git pull
-function executeGitPull(res) {
-  const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
-  const gitPath = 'C:\\Program Files\\Git\\cmd\\git.exe'; // Ruta completa de git.exe sin comillas
-
-  exec(`powershell -Command "& {cd '${projectDir}'; & '${gitPath}' pull}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error ejecutando git pull: ${stderr}`);
-      const response = [false, `Error ejecutando git pull: ${stderr || 'Error desconocido'}`, 500];
-      res.status(500).json(response);
+const ejecutarWebHook = async () => {
+  const responsePull = await executeGitPull();
+  if (responsePull[0]) {
+    const responsePm2 = await executePm2Restart(responsePull[1]);
+    if (responsePm2[0]) {
+      res.status(responsePm2[2]).json(responsePm2);
     } else {
-      console.log(`Salida de git pull: ${stdout}`);
-      // Si git pull tiene éxito, llama a la función para reiniciar PM2
-      executePm2Restart(res, stdout);
+      res.status(responsePm2[2]).json(responsePm2);
     }
-  });
+  } else {
+    res.status(responsePull[2]).json(responsePull);
+  }
+}
+
+// Función para ejecutar git pull
+function executeGitPull() {
+  return new Promise((resolve, reject) => {
+    const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
+    const gitPath = 'C:\\Program Files\\Git\\cmd\\git.exe'; // Ruta completa de git.exe sin comillas
+
+    exec(`powershell -Command "& {cd '${projectDir}'; & '${gitPath}' pull}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error ejecutando git pull: ${stderr}`);
+        const response = [false, `Error ejecutando git pull: ${stderr || 'Error desconocido'}`, 500];
+        resolve(response);
+      } else {
+        console.log(`Salida de git pull: ${stdout}`);
+        const response = [true, stdout, 500];
+        resolve(response);
+      }
+    });
+  })
 }
 
 // Función para ejecutar pm2 restart después de git pull usando cmd
-function executePm2Restart(res, gitOutput) {
-  const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
-  const pm2Path = 'C:\\Users\\Andres\\AppData\\Roaming\\npm\\pm2.cmd';
+function executePm2Restart(gitOutput) {
+  return new Promise((resolve, reject) => {
+    const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
+    const pm2Path = 'C:\\Users\\Andres\\AppData\\Roaming\\npm\\pm2.cmd';
 
-  exec(`powershell -Command "& {cd '${projectDir}'; & '${pm2Path} restart 0'}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error ejecutando pm2 restart: ${stderr}`);
-      const response = [false, `Error ejecutando pm2 restart: ${stderr || 'Error desconocido'}`, 500];
-      res.status(500).json(response);
-    } else {
-      console.log(`Salida de pm2 restart: ${stdout}`);
-      const response = [true, `Salida de git pull: ${gitOutput}\nSalida de pm2 restart: ${stdout}`, 200];
-      res.status(200).json(response);
-    }
-  });
+    exec(`powershell -Command "& {cd '${projectDir}'; & '${pm2Path}' restart '0'}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error ejecutando pm2 restart: ${stderr}`);
+        const response = [false, `Error ejecutando pm2 restart: ${stderr || 'Error desconocido'}`, 500];
+        resolve(response);
+      } else {
+        console.log(`Salida de pm2 restart: ${stdout}`);
+        const response = [true, `Salida de git pull: ${gitOutput}\nSalida de pm2 restart: ${stdout}`, 200];
+        resolve(response);
+      }
+    });
+  })
 }
 
 // Ruta GET para verificar la webhook de github
