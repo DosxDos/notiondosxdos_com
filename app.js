@@ -67,7 +67,7 @@ app.get('/webhookgithub', (req, res) => {
 // Ruta GET para verificar la webhook de github
 app.get('/verificar', async (req, res) => {
   try {
-    const response = [true, `verificar 1`, 200];
+    const response = [true, `verificar 2`, 200];
     res.status(200).json(response);
   } catch (error) {
     const response = [false, error, 500];
