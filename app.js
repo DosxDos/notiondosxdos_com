@@ -72,7 +72,7 @@ function executeGitPull(res) {
 function executePm2Restart(res, gitOutput) {
   const pm2Path = 'C:\\Users\\Andres\\AppData\\Roaming\\npm\\pm2.cmd';
 
-  exec(`powershell -Command "& {'${pm2Path} restart 0'}"`, (error, stdout, stderr) => {
+  exec(`powershell -Command "pm2.ps1 restart 0"`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error ejecutando pm2 restart: ${stderr}`);
       const response = [false, `Error ejecutando pm2 restart: ${stderr || 'Error desconocido'}`, 500];
