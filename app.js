@@ -90,7 +90,7 @@ function executePm2Restart(res, gitOutput) {
 // Ruta GET para verificar la webhook de github
 app.get('/verificar', async (req, res) => {
   try {
-    const response = [true, `verificar 5`, 200];
+    const response = [true, `verificar 6`, 200];
     res.status(200).json(response);
   } catch (error) {
     const response = [false, error, 500];
