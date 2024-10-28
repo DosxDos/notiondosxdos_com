@@ -45,7 +45,7 @@ app.get('/api', async (req, res) => {
 const { exec } = require('child_process');
 
 // Ruta GET para el webhook de GitHub
-app.get('/webhookgithub', (req, res) => {
+app.post('/webhookgithub', (req, res) => {
   ejecutarWebHook();
 });
 
@@ -106,7 +106,7 @@ function executePm2Restart(gitOutput) {
 // Ruta GET para verificar la webhook de github
 app.get('/verificar', async (req, res) => {
   try {
-    const response = [true, `verificar 11`, 200];
+    const response = [true, `verificar 12`, 200];
     res.status(200).json(response);
   } catch (error) {
     const response = [false, error, 500];
