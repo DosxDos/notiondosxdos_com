@@ -43,6 +43,46 @@ class respuesta {
         return this.limit;
     }
 
+    reponder(objeto) {
+        if (objeto.status) {
+            switch (objeto.code) {
+                case 200:
+                    this._200();
+                    break;
+                case 201:
+                    this._201();
+                    break;
+                default:
+                    this._200();
+                    break;
+            }
+        } else {
+            switch (objeto.code) {
+                case 400:
+                    this._400();
+                    break;
+                case 401:
+                    this._401();
+                    break;
+                case 403:
+                    this._403();
+                    break;
+                case 404:
+                    this._404();
+                    break;
+                case 500:
+                    this._500();
+                    break;
+                case 503:
+                    this._503();
+                    break;
+                default:
+                    this._500();
+                    break;
+            }
+        }
+    }
+
     _200() {
         const response = {
             status: true,

@@ -2,10 +2,10 @@ import { Client } from '@notionhq/client';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const ApiKey = process.env.API_KEY;
+const apiKey = process.env.API_KEY;
 
 // Initialize Notion client
-const notion = new Client({ auth: ApiKey });
+const notion = new Client({ auth: apiKey });
 
 // Load database ID from environment variables
 const notionDatabaseId = process.env.NOTION_DATABASE_ID;

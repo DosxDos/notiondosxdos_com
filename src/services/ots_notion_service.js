@@ -10,13 +10,13 @@ class ots_notion_service {
     }
 
     crearOt() {
-        return new promise(async (resolve, reject) => {
+        return new promise(async (resolve) => {
             try {
-                if (this.body.hasOwnProperty("DepartamentosRelacionados") && this.body.hasOwnProperty("Codigo") && this.body.hasOwnProperty("Prefijo") && this.body.hasOwnProperty("Navision") && this.body.hasOwnProperty("NombreDeOT") && this.body.hasOwnProperty("clienteNotion") && this.body.hasOwnProperty("Firma") && this.body.hasOwnProperty("TipoDeOT") && this.body.hasOwnProperty("SubtipoDeOT") && this.body.hasOwnProperty("FechaDePrevision") && this.body.hasOwnProperty("FotosDeOT") && this.body.hasOwnProperty("id")) {
+                if (this.body.hasOwnProperty("departamentosRelacionados") && this.body.hasOwnProperty("codigo") && this.body.hasOwnProperty("prefijo") && this.body.hasOwnProperty("navision") && this.body.hasOwnProperty("nombreDeOT") && this.body.hasOwnProperty("clienteNotion") && this.body.hasOwnProperty("firma") && this.body.hasOwnProperty("tipoDeOT") && this.body.hasOwnProperty("subtipoDeOT") && this.body.hasOwnProperty("fechaDePrevision") && this.body.hasOwnProperty("fotosDeOT") && this.body.hasOwnProperty("id")) {
                     const notion = new Client({
                         auth: process.env.API_KEY,
                     });
-                    let departamentos = this.body.DepartamentosRelacionados;
+                    let departamentos = this.body.departamentosRelacionados;
                     let arrayOfObjects;
                     if (departamentos) {
                         arrayOfObjects = departamentos.split(';').map(value => {
@@ -41,7 +41,7 @@ class ots_notion_service {
                                 title: [
                                     {
                                         text: {
-                                            content: this.body.Codigo,
+                                            content: this.body.codigo,
                                         },
                                     },
                                 ],
@@ -51,7 +51,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.Prefijo,
+                                            content: this.body.prefijo,
                                         },
                                     },
                                 ],
@@ -60,7 +60,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.Navision,
+                                            content: this.body.navision,
                                         },
                                     },
                                 ],
@@ -70,7 +70,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.NombreDeOT,
+                                            content: this.body.nombreDeOT,
                                         },
                                     },
                                 ],
@@ -90,7 +90,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.Firma,
+                                            content: this.body.firma,
                                         },
                                     },
                                 ],
@@ -100,7 +100,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.TipoDeOT,
+                                            content: this.body.tipoDeOT,
                                         },
                                     },
                                 ],
@@ -110,7 +110,7 @@ class ots_notion_service {
                                 rich_text: [
                                     {
                                         text: {
-                                            content: this.body.SubtipoDeOT,
+                                            content: this.body.subtipoDeOT,
                                         },
                                     },
                                 ],
@@ -122,12 +122,12 @@ class ots_notion_service {
                             [process.env.FECHA_DE_MONTAJE_ID]: {
                                 // Fecha de montaje
                                 date: {
-                                    start: this.body.FechaDePrevision || "1970-01-01",
+                                    start: this.body.fechaDePrevision || "1970-01-01",
                                 },
                             },
                             [process.env.PHOTOAPP_ID]: {
                                 // PhotoApp
-                                url: this.body.FotosDeOT || "dosxdos.app",
+                                url: this.body.fotosDeOT || "dosxdos.app",
                             },
                             [process.env.CRM_ID]: {
                                 rich_text: [
@@ -155,19 +155,32 @@ class ots_notion_service {
                         ]
                     }
                     const response2 = await notion.comments.create(solicitud2);
-                    resolve(response2);
+                    const finalResponse = {};
+                    finalResponse.status = true;
+                    finalResponse.message = 'Se ha enviado exitosamente la solicitud a NOTION para crear la nueva OT';
+                    finalResponse.code = 200;
+                    finalResponse.data = response2;
+                    finalResponse.page = null;
+                    finalResponse.limit = null;
+                    resolve(finalResponse);
                 } else {
-                    const response = [];
-                    response[0] = false;
-                    response[1] = 'No se han enviado en el cuerpo de la solicitud todas las variables necesarias';
-                    response[2] = 400;
+                    const response = {};
+                    response.status = false;
+                    response.message = 'No se han enviado en el cuerpo de la solicitud todas las variables necesarias';
+                    response.code = 400;
+                    response.data = null;
+                    response.page = null;
+                    response.limit = null;
                     resolve(response);
                 }
             } catch (error) {
-                const response = [];
-                response[0] = false;
-                response[1] = error.massage;
-                response[2] = 500;
+                const response = {};
+                response.status = false;
+                response.message = error.massage;
+                response.code = 500;
+                response.data = null;
+                response.page = null;
+                response.limit = null;
                 resolve(response);
             }
         });
