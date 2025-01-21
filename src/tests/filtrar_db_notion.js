@@ -1,8 +1,11 @@
-const { Client } = require('@notionhq/client');
-require('dotenv').config(); // Load environment variables from .env file
+import { Client } from '@notionhq/client';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const ApiKey = process.env.API_KEY;
 
 // Initialize Notion client
-const notion = new Client({ auth: process.env.API_KEY });
+const notion = new Client({ auth: ApiKey });
 
 // Load database ID from environment variables
 const notionDatabaseId = process.env.NOTION_DATABASE_ID;
@@ -42,7 +45,7 @@ const getNotionRecordByCrmId = async (crmId) => {
 
 // Example usage
 (async () => {
-    const crmId = '200000'; // Replace with the actual CRM ID you want to search for
+    const crmId = '707987000010430317'; // Replace with the actual CRM ID you want to search for
     const notionRecord = await getNotionRecordByCrmId(crmId);
     if (notionRecord) {
         console.log(`Record found for CRM ID: ${crmId}`);

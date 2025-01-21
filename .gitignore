@@ -1,2 +1,6 @@
 node_modules/
 .env
+notiondosxdos.com-chain-only.pem
+notiondosxdos.com-chain.pem
+notiondosxdos.com-crt.pem
+notiondosxdos.com-key.pem
