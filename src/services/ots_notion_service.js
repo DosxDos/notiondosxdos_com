@@ -23,7 +23,7 @@ class ots_notion_service {
                     let departamentos = this.body.departamentosRelacionados;
                     let arrayOfObjects;
                     if (departamentos) {
-                        arrayOfObjects = departamentos.map(value => {
+                        arrayOfObjects = departamentos.split(';').map(value => {
                             return { name: value };
                         });
                     } else {
