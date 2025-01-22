@@ -163,7 +163,9 @@ class ots_notion_service {
                     finalResponse.status = true;
                     finalResponse.message = 'Se ha enviado exitosamente la solicitud a NOTION para crear la nueva OT';
                     finalResponse.code = 200;
-                    finalResponse.data = response2;
+                    finalResponse.data = {};
+                    finalResponse.data.response1 = response;
+                    finalResponse.data.response2 = response2;
                     finalResponse.page = null;
                     finalResponse.limit = null;
                     resolve(finalResponse);
@@ -177,17 +179,6 @@ class ots_notion_service {
                     response.limit = null;
                     resolve(response);
                 }
-                
-                /*
-                const finalResponse = {};
-                finalResponse.status = true;
-                finalResponse.message = 'Verificación del cuerpo recibido';
-                finalResponse.code = 200;
-                finalResponse.data = this.body;
-                finalResponse.page = null;
-                finalResponse.limit = null;
-                resolve(finalResponse);
-                */
             } catch (error) {
                 console.error("Error en crearOt():", error);
                 const response = {};
