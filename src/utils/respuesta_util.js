@@ -1,22 +1,22 @@
 class respuesta {
-
-    constructor(res, message = null, data = null, page = null, limit = null) {
-        this.body = res.body;
-        this.res = res;
+    constructor(message = null, data = null, page = null, limit = null) {
         this.status = null;
         this.code = null;
         this.message = message;
         this.data = data;
         this.page = page;
         this.limit = limit;
-    }
 
-    getBody() {
-        return this.body;
-    }
-
-    getRes() {
-        return this.res;
+        // Enlazar métodos para asegurar el contexto de `this`
+        this.responder = this.responder.bind(this);
+        this._200 = this._200.bind(this);
+        this._201 = this._201.bind(this);
+        this._400 = this._400.bind(this);
+        this._401 = this._401.bind(this);
+        this._403 = this._403.bind(this);
+        this._404 = this._404.bind(this);
+        this._500 = this._500.bind(this);
+        this._503 = this._503.bind(this);
     }
 
     getStatus() {
@@ -43,43 +43,38 @@ class respuesta {
         return this.limit;
     }
 
-    reponder(objeto) {
-        if (objeto.status) {
-            switch (objeto.code) {
-                case 200:
-                    this._200();
-                    break;
-                case 201:
-                    this._201();
-                    break;
-                default:
-                    this._200();
-                    break;
+    responder(objeto) {
+        if (objeto) {
+            if (objeto.status) {
+                switch (objeto.code) {
+                    case 200:
+                        return this._200();
+                    case 201:
+                        return this._201();
+                    default:
+                        return this._200();
+                }
+            } else {
+                switch (objeto.code) {
+                    case 400:
+                        return this._400();
+                    case 401:
+                        return this._401();
+                    case 403:
+                        return this._403();
+                    case 404:
+                        return this._404();
+                    case 500:
+                        return this._500();
+                    case 503:
+                        return this._503();
+                    default:
+                        return this._500();
+                }
             }
         } else {
-            switch (objeto.code) {
-                case 400:
-                    this._400();
-                    break;
-                case 401:
-                    this._401();
-                    break;
-                case 403:
-                    this._403();
-                    break;
-                case 404:
-                    this._404();
-                    break;
-                case 500:
-                    this._500();
-                    break;
-                case 503:
-                    this._503();
-                    break;
-                default:
-                    this._500();
-                    break;
-            }
+            this.message = 'No se ha recibido un objeto en la función responder() del objeto de respuesta';
+            return this._500();
         }
     }
 
@@ -96,62 +91,52 @@ class respuesta {
             response.limit = this.limit;
         }
 
-        this.res.status(200).json(response);
+        return response;
     }
 
     _201() {
-        const response = {
+        return {
             status: true,
             code: 201,
             message: this.message || 'Recurso creado con éxito',
             data: this.data,
         };
-
-        this.res.status(201).json(response);
     }
 
     _400() {
-        const response = {
+        return {
             status: false,
             code: 400,
             message: this.message || 'Solicitud incorrecta',
             data: this.data,
         };
-
-        this.res.status(400).json(response);
     }
 
     _401() {
-        const response = {
+        return {
             status: false,
             code: 401,
             message: this.message || 'No autorizado',
             data: this.data,
         };
-
-        this.res.status(401).json(response);
     }
 
     _403() {
-        const response = {
+        return {
             status: false,
             code: 403,
             message: this.message || 'Prohibido',
             data: this.data,
         };
-
-        this.res.status(403).json(response);
     }
 
     _404() {
-        const response = {
+        return {
             status: false,
             code: 404,
             message: this.message || 'No encontrado',
             data: this.data,
         };
-
-        this.res.status(404).json(response);
     }
 
     _500() {
@@ -167,20 +152,17 @@ class respuesta {
             response.limit = this.limit;
         }
 
-        this.res.status(500).json(response);
+        return response;
     }
 
     _503() {
-        const response = {
+        return {
             status: false,
             code: 503,
             message: this.message || 'Servicio no disponible',
             data: this.data,
         };
-
-        this.res.status(503).json(response);
     }
-
 }
 
 export default respuesta;

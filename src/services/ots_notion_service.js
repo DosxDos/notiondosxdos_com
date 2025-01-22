@@ -3,6 +3,10 @@ import { Client } from '@notionhq/client';
 class ots_notion_service {
     constructor(body) {
         this.body = body;
+
+        // Enlazar métodos para asegurar el contexto de `this`
+        this.getBody = this.getBody.bind(this);
+        this.crearOt = this.crearOt.bind(this);
     }
 
     getBody() {
@@ -10,7 +14,7 @@ class ots_notion_service {
     }
 
     crearOt() {
-        return new promise(async (resolve) => {
+        return new Promise(async (resolve) => {
             try {
                 if (this.body.hasOwnProperty("departamentosRelacionados") && this.body.hasOwnProperty("codigo") && this.body.hasOwnProperty("prefijo") && this.body.hasOwnProperty("navision") && this.body.hasOwnProperty("nombreDeOT") && this.body.hasOwnProperty("clienteNotion") && this.body.hasOwnProperty("firma") && this.body.hasOwnProperty("tipoDeOT") && this.body.hasOwnProperty("subtipoDeOT") && this.body.hasOwnProperty("fechaDePrevision") && this.body.hasOwnProperty("fotosDeOT") && this.body.hasOwnProperty("id")) {
                     const notion = new Client({
@@ -19,7 +23,7 @@ class ots_notion_service {
                     let departamentos = this.body.departamentosRelacionados;
                     let arrayOfObjects;
                     if (departamentos) {
-                        arrayOfObjects = departamentos.split(';').map(value => {
+                        arrayOfObjects = departamentos.map(value => {
                             return { name: value };
                         });
                     } else {
@@ -116,7 +120,7 @@ class ots_notion_service {
                                 ],
                             },
                             [process.env.DEPARTAMENTO_RELACIONADO_ID]: {
-                                // Departamentos
+                                // Departamentos - Reemplazar por arrayOfObjects si es necesario
                                 multi_select: arrayOfObjects,
                             },
                             [process.env.FECHA_DE_MONTAJE_ID]: {
@@ -149,7 +153,7 @@ class ots_notion_service {
                         "rich_text": [
                             {
                                 "text": {
-                                    "content": this.body.Observaciones
+                                    "content": this.body.observaciones
                                 }
                             }
                         ]
@@ -173,12 +177,24 @@ class ots_notion_service {
                     response.limit = null;
                     resolve(response);
                 }
+                
+                /*
+                const finalResponse = {};
+                finalResponse.status = true;
+                finalResponse.message = 'Verificación del cuerpo recibido';
+                finalResponse.code = 200;
+                finalResponse.data = this.body;
+                finalResponse.page = null;
+                finalResponse.limit = null;
+                resolve(finalResponse);
+                */
             } catch (error) {
+                console.error("Error en crearOt():", error);
                 const response = {};
                 response.status = false;
-                response.message = error.massage;
+                response.message = error.message + " - Error en catch al intentar crear la nueva OT en NOTION. ots_notion_service.js. crearOt() - ";
                 response.code = 500;
-                response.data = null;
+                response.data = error.stack || error;
                 response.page = null;
                 response.limit = null;
                 resolve(response);

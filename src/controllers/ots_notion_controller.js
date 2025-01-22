@@ -2,34 +2,26 @@ import respuesta from '../utils/respuesta_util.js';
 import ots_notion_service from '../services/ots_notion_service.js';
 
 class ots_notion_controller {
-    constructor(res, req) {
-        this.body = res.body;
-        this.res = res;
-        this.req = req;
+    constructor(body) {
+        this.body = body;
+
+        // Enlazar métodos para mantener el contexto de `this`
+        this.getBody = this.getBody.bind(this);
+        this.crearOt = this.crearOt.bind(this);
     }
 
     getBody() {
         return this.body;
     }
 
-    getRes() {
-        return this.res;
-    }
-
-    getReq() {
-        return this.req;
-    }
-
     async crearOt() {
-        try {
+        return new Promise(async (resolve) => {
             const otsNotionService = new ots_notion_service(this.body);
-            const response = await otsNotionService.crearOt();
-            const finalResponse = new respuesta(this.res, response.message, response.data, response.page, response.limit);
-            finalResponse.reponder(response);
-        } catch (error) {
-            const finalResponse = new respuesta(this.res, error.message, error);
-            finalResponse._500();
-        }
+            const responseNotion = await otsNotionService.crearOt();
+            const respuestas = new respuesta(responseNotion.message, responseNotion.data, responseNotion.page, responseNotion.limit);
+            const response = respuestas.responder(responseNotion);
+            resolve(response);
+        });
     }
 
 }

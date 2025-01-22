@@ -1,0 +1,18 @@
+{
+    "departamentosRelacionados": [
+        "Clientes",
+        "Rutas",
+        "Taller"
+    ],
+    "codigo": "0001",
+    "prefijo": "OT",
+    "navision": "0001",
+    "nombreDeOT": "OT DE PRUEBA PARA MVC DE LA API",
+    "clienteNotion": "L'OREAL ESPAÑA, S.A.",
+    "firma": "SIN FIRMA",
+    "tipoDeOT": "INS",
+    "subtipoDeOT": "MANTENIMIENTO",
+    "fechaDePrevision": "2025-01-30",
+    "fotosDeOT": "https://dosxdos.app",
+    "id": "7777777"
+}
