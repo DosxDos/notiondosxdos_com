@@ -27,8 +27,9 @@ app.get('/', (req, res) => {
 
 // Endpoints solicitados que no están definidos en el backend
 app.use((req, res, next) => {
-  const finalResponse = new respuesta(res, 'El endpoint solicitado no existe');
-  finalResponse._404();
+  const respuestas = new respuesta('El endpoint solicitado no existe');
+  const response = respuestas._404();
+  res.status(response.code).json(response);
 });
 
 // Validar variables de entorno
