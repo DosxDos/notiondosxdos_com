@@ -6,6 +6,7 @@ const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
 import respuesta from './utils/respuesta_util.js';
+import { exec } from 'child_process';
 
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +25,76 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// Ruta GET para verificar el webhook de github
+app.get('/verificar', async (req, res) => {
+  try {
+    const response = [true, `verificar 16`, 200];
+    res.status(200).json(response);
+  } catch (error) {
+    const response = [false, error, 500];
+    res.status(500).json(response);
+  }
+});
+
+// Ruta POST para el webhook de GitHub
+app.post('/webhookgithub', (req, res) => {
+  console.log("Webhook recibido: Iniciando git pull...");
+
+  // Responder inmediatamente a Apache para evitar timeout
+  res.status(200).json({ success: true, message: "Proceso de actualización iniciado" });
+
+  // Ejecutar git pull y pm2 restart en segundo plano
+  ejecutarWebHook();
+});
+
+// Función para ejecutar git pull y pm2 restart en segundo plano
+const ejecutarWebHook = async () => {
+  try {
+    const responsePull = await executeGitPull();
+    console.log(responsePull.message);
+
+    if (responsePull.success) {
+      const responsePm2 = await executePm2Restart();
+      console.log(responsePm2.message);
+    }
+  } catch (error) {
+    console.error(`Error en el Webhook: ${error.message}`);
+  }
+};
+
+// Función para ejecutar git pull
+function executeGitPull() {
+  return new Promise((resolve) => {
+    const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
+    const gitPath = 'C:\\Program Files\\Git\\cmd\\git.exe';
+
+    exec(`powershell -Command "& {cd '${projectDir}'; & '${gitPath}' pull}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error ejecutando git pull: ${stderr}`);
+        return resolve({ success: false, message: 'Error ejecutando git pull', status: 500 });
+      }
+      console.log(`Salida de git pull: ${stdout}`);
+      return resolve({ success: true, message: 'git pull ejecutado con éxito', status: 200 });
+    });
+  });
+}
+
+// Función para ejecutar pm2 restart después de git pull
+function executePm2Restart() {
+  return new Promise((resolve) => {
+    const pm2Path = 'C:\\Users\\Andres\\AppData\\Roaming\\npm\\pm2.cmd';
+
+    exec(`powershell -Command "& {& '${pm2Path}' restart '0'}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error ejecutando pm2 restart: ${stderr}`);
+        return resolve({ success: false, message: 'Error ejecutando pm2 restart', status: 500 });
+      }
+      console.log(`Salida de pm2 restart: ${stdout}`);
+      return resolve({ success: true, message: 'pm2 restart ejecutado con éxito', status: 200 });
+    });
+  });
+}
 
 // Endpoints solicitados que no están definidos en el backend
 app.use((req, res, next) => {
