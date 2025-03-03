@@ -34,7 +34,7 @@ class ots_crmzoho_service {
                     }
                 ]
             };
-            
+
             await mongo.connect(); // Conectar a la base de datos
 
             // Usamos el método upsertByCodigo para manejar la lógica
@@ -42,21 +42,30 @@ class ots_crmzoho_service {
             console.log(result);
             await mongo.close(); // Cerramos la conexión
 
-            // Hacer la solicitud POST a Zoho CRM para crear la OT como un "Deal"
-            const responseZoho = await axios.post('https://www.zohoapis.eu/crm/v2/Deals', zohoData, {
-                headers: {
-                    'Authorization': `Zoho-oauthtoken ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            if (result != false) {
+                // Hacer la solicitud POST a Zoho CRM para crear la OT como un "Deal"
+                const responseZoho = await axios.post('https://www.zohoapis.eu/crm/v2/Deals', zohoData, {
+                    headers: {
+                        'Authorization': `Zoho-oauthtoken ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            // Retornar la respuesta de Zoho CRM
-            return {
-                status: true,
-                message: 'OT creada exitosamente en Zoho CRM.',
-                code: 200,
-                data: responseZoho.data,
-            };
+                // Retornar la respuesta de Zoho CRM
+                return {
+                    status: true,
+                    message: 'OT creada exitosamente en Zoho CRM.',
+                    code: 201,
+                    data: responseZoho.data,
+                };
+            } else {
+                return {
+                    status: true,
+                    message: 'La actualización de la OT en la base de datos fue exitosa, pero no se envió a Zoho CRM.',
+                    code: 200,
+                    data: 'Esta actualizada la base de datos',
+                };
+            }
         } catch (error) {
             console.error('Error al enviar la OT a Zoho CRM:', error);
             return {

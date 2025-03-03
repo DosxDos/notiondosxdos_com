@@ -40,7 +40,7 @@ class ots_notion_service {
                     console.log(result);
                     await mongo.close(); // Cerramos la conexión
 
-                    if (result) {
+                    if (result != false) {
 
                         const notion = new Client({
                             auth: process.env.API_KEY,
