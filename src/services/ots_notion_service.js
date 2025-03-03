@@ -31,16 +31,16 @@ class ots_notion_service {
         return new Promise(async (resolve) => {
             try {
 
-                await mongo.connect(); // Conectar a la base de datos
+                //await mongo.connect(); // Conectar a la base de datos
 
                 if (this.body.hasOwnProperty("departamentosRelacionados") && this.body.hasOwnProperty("codigo") && this.body.hasOwnProperty("prefijo") && this.body.hasOwnProperty("navision") && this.body.hasOwnProperty("nombreDeOT") && this.body.hasOwnProperty("clienteNotion") && this.body.hasOwnProperty("firma") && this.body.hasOwnProperty("tipoDeOT") && this.body.hasOwnProperty("subtipoDeOT") && this.body.hasOwnProperty("fechaDePrevision") && this.body.hasOwnProperty("fotosDeOT") && this.body.hasOwnProperty("id")) {
 
                     // Usamos el método upsertByCodigo para manejar la lógica
-                    const result = await mongo.upsertByCodigo('ot', this.body.codigo, zohoData.data);
-                    console.log(result);
-                    await mongo.close(); // Cerramos la conexión
+                    //const result = await mongo.upsertByCodigo('ot', this.body.codigo, this.body);
+                    //console.log(result);
+                    //await mongo.close(); // Cerramos la conexión
 
-                    if (result != false) {
+                    //if (result != false) {
 
                         const notion = new Client({
                             auth: process.env.API_KEY,
@@ -194,7 +194,7 @@ class ots_notion_service {
                         finalResponse.page = null;
                         finalResponse.limit = null;
                         resolve(finalResponse);
-                    }
+                    //}
                 } else {
                     const response = {};
                     response.status = false;

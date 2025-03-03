@@ -74,7 +74,9 @@ class MongoDB {
       const collection = this.db.collection(collectionName);
 
       // Buscar un documento con el C_digo proporcionado
-      const existingDocument = await collection.findOne({ C_digo });
+      const existingDocument = await collection.findOne({ "data.C_digo": C_digo });
+
+      console.log('Documento existente:', existingDocument);
 
       if (!existingDocument) {
         // Si no existe el documento, creamos uno nuevo
@@ -83,7 +85,7 @@ class MongoDB {
         return result;
       } else {
         // Si el documento existe, comparamos los valores
-        if (JSON.stringify(existingDocument) === JSON.stringify(body)) {
+        if (JSON.stringify(existingDocument) === JSON.stringify(body.data)) {
           console.log('El documento ya es igual, no se requiere ninguna actualización.');
           return false; // No se hace nada si todo es igual
         } else {

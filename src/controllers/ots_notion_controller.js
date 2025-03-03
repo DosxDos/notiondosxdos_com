@@ -10,7 +10,6 @@ class ots_notion_controller {
         this.crearOt = this.crearOt.bind(this);
         this.actualizarOt = this.putOt.bind(this);
         this.deleteOt = this.deleteOt.bind(this); // Método para eliminar la OT
-        this.enviarACRM = this.enviarACRM.bind(this); // Método para enviar a Zoho
     }
 
     getBody() {

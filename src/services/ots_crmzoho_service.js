@@ -10,15 +10,20 @@ class ots_crmzoho_service {
 
     // Método para enviar la OT a Zoho CRM
     async crearOT() {
-        try {
-            const mongo = new MongoDB();
-            // Obtener el token de acceso
-            const zoho = new Zoho();
-            const accessToken = await zoho.getZohoAccessToken(); // Obtener el access token
+        const mongo = new MongoDB();
+        const zoho = new Zoho();
 
+        try {
+            // Obtener el token de acceso
+            const accessToken = await zoho.getZohoAccessToken(); // Obtener el access token
             console.log('Token de acceso obtenido:', accessToken);
 
-            // Mapear los datos de la OT
+            // Validar si el token de acceso fue obtenido correctamente
+            if (!accessToken) {
+                throw new Error('No se pudo obtener el token de acceso a Zoho.');
+            }
+
+            // Mapear los datos de la OT para Zoho CRM
             const zohoData = {
                 data: [
                     {
@@ -35,14 +40,19 @@ class ots_crmzoho_service {
                 ]
             };
 
-            await mongo.connect(); // Conectar a la base de datos
+            // Conectar a la base de datos
+            await mongo.connect();
+            console.log('Conexión a MongoDB exitosa.');
 
-            // Usamos el método upsertByCodigo para manejar la lógica
-            const result = await mongo.upsertByCodigo('ot', this.body.codigo, zohoData.data);
-            console.log(result);
-            await mongo.close(); // Cerramos la conexión
+            // Usamos el método upsertByCodigo para manejar la lógica de inserción
+            const result = await mongo.upsertByCodigo('ot', this.body.codigo, zohoData);
+            console.log('Resultado de la inserción/actualización en MongoDB:', result);
 
-            if (result != false) {
+            // Cerrar la conexión a MongoDB
+            await mongo.close();
+
+            // Si la base de datos fue actualizada exitosamente
+            if (result !== false) {
                 // Hacer la solicitud POST a Zoho CRM para crear la OT como un "Deal"
                 const responseZoho = await axios.post('https://www.zohoapis.eu/crm/v2/Deals', zohoData, {
                     headers: {
@@ -50,6 +60,8 @@ class ots_crmzoho_service {
                         'Content-Type': 'application/json',
                     },
                 });
+
+                console.log('Respuesta de Zoho CRM:', responseZoho.data);
 
                 // Retornar la respuesta de Zoho CRM
                 return {
@@ -63,16 +75,18 @@ class ots_crmzoho_service {
                     status: true,
                     message: 'La actualización de la OT en la base de datos fue exitosa, pero no se envió a Zoho CRM.',
                     code: 200,
-                    data: 'Esta actualizada la base de datos',
+                    data: 'La base de datos se ha actualizado correctamente, pero no se ha enviado a Zoho CRM.',
                 };
             }
         } catch (error) {
             console.error('Error al enviar la OT a Zoho CRM:', error);
+
+            // Mejorar el manejo de errores
             return {
                 status: false,
-                message: 'Error al crear la OT en Zoho CRM',
+                message: error.message || 'Error desconocido al crear la OT en Zoho CRM',
                 code: 500,
-                data: error.message,
+                data: error.stack || error,
             };
         }
     }

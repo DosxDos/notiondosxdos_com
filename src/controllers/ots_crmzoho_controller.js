@@ -4,6 +4,9 @@ class ots_notion_controller {
     constructor(body) {
         this.body = body;
         this.otsService = new ots_crmzoho_service(this.body); // Instanciamos el servicio
+
+          // Vinculamos explícitamente el método al contexto de la clase
+          this.crearOt = this.crearOt.bind(this); 
     }
 
     // Método que se encarga de llamar al servicio para crear la OT
