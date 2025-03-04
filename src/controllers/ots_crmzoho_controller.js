@@ -1,28 +1,22 @@
-import ots_crmzoho_service from '../services/ots_crmzoho_service.js';
+import respuesta from '../utils/respuesta_util.js';
+import ots_crmzoho_service from '../services/ots_crmzoho_service.js'; // Importamos el servicio correctamente
 
-class ots_notion_controller {
+class ots_crmzoho_controller {
     constructor(body) {
         this.body = body;
-        this.otsService = new ots_crmzoho_service(this.body); // Instanciamos el servicio
-
-          // Vinculamos explícitamente el método al contexto de la clase
-          this.crearOt = this.crearOt.bind(this); 
+        this.otsService = new ots_crmzoho_service(body); // Se crea la instancia correctamente
     }
 
-    // Método que se encarga de llamar al servicio para crear la OT
     async crearOt() {
         try {
-            const response = await this.otsService.crearOT(); // Llamamos al servicio para procesar la OT
-            return response;
+            const response = await this.otsService.procesarOT(); // Asegurarse de usar el método correcto
+            const respuestas = new respuesta(response.message, response.data);
+            return respuestas.responder(response);
         } catch (error) {
-            return {
-                status: false,
-                message: error.message,
-                code: 500,
-                data: error.stack || error,
-            };
+            console.error('Error en crearOt:', error);
+            return new respuesta('Error al procesar la OT en Zoho CRM', null)._500();
         }
     }
 }
 
-export default ots_notion_controller;
+export default ots_crmzoho_controller;

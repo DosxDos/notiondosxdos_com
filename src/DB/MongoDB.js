@@ -69,40 +69,50 @@ class MongoDB {
     }
   }
 
-  async upsertByCodigo(collectionName, C_digo, body) {
+  async createIfNotExists(collectionName, C_digo, body) {
     try {
-      const collection = this.db.collection(collectionName);
+        console.log('Verificando si el documento ya existe...');
+        const collection = this.db.collection(collectionName);
 
-      // Buscar un documento con el C_digo proporcionado
-      const existingDocument = await collection.findOne({ "data.C_digo": C_digo });
+        // Buscar el documento completo, si no existe lo creamos
+        const document = await collection.findOne({}); // Aquí puedes agregar un filtro si lo necesitas
 
-      console.log('Documento existente:', existingDocument);
-
-      if (!existingDocument) {
-        // Si no existe el documento, creamos uno nuevo
-        const result = await collection.insertOne(body);
-        console.log('Documento creado:', result);
-        return result;
-      } else {
-        // Si el documento existe, comparamos los valores
-        if (JSON.stringify(existingDocument) === JSON.stringify(body.data)) {
-          console.log('El documento ya es igual, no se requiere ninguna actualización.');
-          return false; // No se hace nada si todo es igual
-        } else {
-          // Si no es igual, actualizamos el documento
-          const result = await collection.updateOne(
-            { C_digo }, // Buscar por C_digo
-            { $set: body } // Actualizar con el nuevo body
-          );
-          console.log('Documento actualizado:', result);
-          return result;
+        // Si no existe el documento, lo creamos
+        if (!document) {
+            console.log('Documento no encontrado, creando uno nuevo...');
+            const newDocument = { data: body.data };  // Insertamos 'data' directamente como un array de objetos
+            const result = await collection.insertOne(newDocument);
+            console.log('Documento creado:', result);
+            return result;  // Retornamos el documento recién creado
         }
-      }
+
+        // Si el documento existe, verificamos si el C_digo ya está presente
+        const existingOT = document.data && document.data.find(subObject => subObject.C_digo === C_digo);
+
+        if (existingOT) {
+            console.log('El objeto con C_digo ya existe, no se crea nada.');
+            return false;  // Si el objeto ya existe, no lo agregamos
+        }
+
+        // Si no existe el C_digo, lo agregamos
+        console.log('C_digo no encontrado, agregando el nuevo objeto...');
+        document.data.push(...body.data);  // Agregamos directamente el objeto al array de 'data'
+
+        // Actualizamos el documento con el nuevo objeto
+        const result = await collection.updateOne(
+            { _id: document._id },
+            { $set: { data: document.data } }  // Actualizamos el campo 'data'
+        );
+        console.log('Documento actualizado con el nuevo objeto:', result);
+        return body.data;  // Retornamos el objeto recién agregado
+
     } catch (error) {
-      console.error('Error al verificar y actualizar el documento:', error);
-      throw error;
+        console.error('Error al verificar y crear el documento:', error);
+        throw error;  // Lanza el error, pero de forma controlada
     }
-  }
+}
+
+
 
   async close() {
     try {
