@@ -132,7 +132,7 @@ class ots_crmzoho_service {
             };
         }
     }
-    
+
     // Método privado para obtener los detalles de una OT desde Zoho CRM usando el id
     async _obtenerDatosDeZoho(zohoId, accessToken) {
         try {
