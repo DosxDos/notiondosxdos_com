@@ -420,7 +420,7 @@ class ots_notion_service {
                     "Fecha_de_previsi_n": $body.fechaDePrevision, // Fecha de previsión
                     "Fotos_de_la_OT": $body.fotosDeOT,        // Fotos de la OT
                     "Comentario": $body.comentarios,          // Comentarios
-                    "Departamentos_afectados": $body.departamentosRelacionados,
+                    "Departamentos_afectados": this._formatearDepartamentos($body.departamentosRelacionados),
                     "Prefijo": $body.prefijo,
                     "Navision": $body.navision,
                     "id": $body.id
@@ -428,6 +428,17 @@ class ots_notion_service {
             ]
         };
     }
+        // Función para asegurar que "Departamentos_relacionados" esté en formato adecuado (array de objetos)
+        _formatearDepartamentos(departamentos) {
+            if (departamentos && Array.isArray(departamentos)) {
+                // Si ya es un array de strings, lo devolvemos tal cual
+                return departamentos;
+            } else if (departamentos && typeof departamentos === 'string') {
+                // Si es un string, lo convertimos en un array de strings
+                return departamentos.split(';').map(dep => dep.trim());  // Eliminamos espacios innecesarios
+            }
+            return [];  // Si no hay departamentos, devolvemos un array vacío
+        }
 }
 
 export default ots_notion_service;
