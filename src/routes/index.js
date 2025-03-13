@@ -35,6 +35,7 @@ router.delete('/ots_notion', async (req, res) => {
 
 // Endpoint para crear la OT en Zoho CRM
 router.post('/ots_crm', async (req, res) => {
+    console.log("Se esta creando una OT de NOTION a CRM")
     const otsNotionController = new ots_crmzoho_controller(req.body);
     const response = await otsNotionController.crearOt();
     res.status(response.code).json(response);

@@ -2,14 +2,28 @@ import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 
 class MongoDB {
+  // Variable estática para almacenar la única instancia de la clase
+  static instance = null;
+  static mongoIds = [];  // Array de diccionarios para almacenar los identificadores
+  static peticion = true;
+
   constructor() {
+    if (MongoDB.instance) {
+      return MongoDB.instance; // Si ya existe una instancia, devolvemos esa
+    }
+
     dotenv.config(); // Cargar las variables de entorno desde el archivo .env
     const uri = process.env.MONGO_URI; // URL de conexión a tu base de datos
     this.dbName = process.env.DB_NAME; // Nombre de tu base de datos
     this.client = new MongoClient(uri); // Cliente de MongoDB
     this.db = null; // Inicializar la base de datos como null
+
+    MongoDB.instance = this; // Guardamos esta instancia como la única instancia
+
+    console.log('Nueva instancia de MongoDB creada.');
   }
 
+  // Método para conectar a MongoDB
   async connect() {
     try {
       await this.client.connect(); // Establecer la conexión
@@ -21,6 +35,7 @@ class MongoDB {
     }
   }
 
+  // Método para crear un documento en MongoDB
   async create(collectionName, document) {
     try {
       const collection = this.db.collection(collectionName); // Obtener la colección
@@ -33,6 +48,7 @@ class MongoDB {
     }
   }
 
+  // Método para leer documentos desde MongoDB
   async read(collectionName, query) {
     try {
       const collection = this.db.collection(collectionName); // Obtener la colección
@@ -45,6 +61,7 @@ class MongoDB {
     }
   }
 
+  // Método para actualizar documentos en MongoDB
   async update(collectionName, query, updateDoc) {
     try {
       const collection = this.db.collection(collectionName); // Obtener la colección
@@ -57,6 +74,7 @@ class MongoDB {
     }
   }
 
+  // Método para eliminar documentos en MongoDB
   async delete(collectionName, query) {
     try {
       const collection = this.db.collection(collectionName); // Obtener la colección
@@ -69,51 +87,101 @@ class MongoDB {
     }
   }
 
-  async createIfNotExists(collectionName, C_digo, body) {
+  // Función para actualizar el código en MongoDB
+  async _actualizarCodigoMongo(nuevoCodigo) {
     try {
-        console.log('Verificando si el documento ya existe...');
-        const collection = this.db.collection(collectionName);
+      console.log('Actualizando código en MongoDB');
 
-        // Buscar el documento completo, si no existe lo creamos
-        const document = await collection.findOne({}); // Aquí puedes agregar un filtro si lo necesitas
+      // Actualizamos el campo C_digo en MongoDB con el nuevo código de Zoho CRM
+      const result = await this.db.collection('ot').updateOne(
+        { 'data.C_digo': '00000' }, // Buscamos por el código 00000
+        { $set: { 'data.$.C_digo': nuevoCodigo } } // Actualizamos el campo C_digo con el nuevo código
+      );
 
-        // Si no existe el documento, lo creamos
-        if (!document) {
-            console.log('Documento no encontrado, creando uno nuevo...');
-            const newDocument = { data: body.data };  // Insertamos 'data' directamente como un array de objetos
-            const result = await collection.insertOne(newDocument);
-            console.log('Documento creado:', result);
-            return result;  // Retornamos el documento recién creado
-        }
+      peticion = true;
 
-        // Si el documento existe, verificamos si el C_digo ya está presente
-        const existingOT = document.data && document.data.find(subObject => subObject.C_digo === C_digo);
+      console.log('MongoDB actualizado con el nuevo código:', result);
 
-        if (existingOT) {
-            console.log('El objeto con C_digo ya existe, no se crea nada.');
-            return false;  // Si el objeto ya existe, no lo agregamos
-        }
-
-        // Si no existe el C_digo, lo agregamos
-        console.log('C_digo no encontrado, agregando el nuevo objeto...');
-        document.data.push(...body.data);  // Agregamos directamente el objeto al array de 'data'
-
-        // Actualizamos el documento con el nuevo objeto
-        const result = await collection.updateOne(
-            { _id: document._id },
-            { $set: { data: document.data } }  // Actualizamos el campo 'data'
-        );
-        console.log('Documento actualizado con el nuevo objeto:', result);
-        return body.data;  // Retornamos el objeto recién agregado
+      // Si se modificó al menos un documento, devuelve true. De lo contrario, false.
+      return result.modifiedCount > 0;
 
     } catch (error) {
-        console.error('Error al verificar y crear el documento:', error);
-        throw error;  // Lanza el error, pero de forma controlada
+      console.error('Error al actualizar el código en MongoDB:', error);
+      return false; // Si hay un error, devolvemos false
     }
-}
+  }
 
 
+  async initializeMongoIds() {
+    if (!Array.isArray(MongoDB.mongoIds)) {
+      MongoDB.mongoIds = [];
+    }
+  }
 
+  async documentExists(collectionName) {
+    return MongoDB.mongoIds.findIndex(doc => doc.collectionName === collectionName);
+  }
+
+  async createNewDocument(collectionName, body) {
+    const collection = this.db.collection(collectionName);
+    let newDocument = { collectionName: collectionName, data: body.data };
+    MongoDB.mongoIds.push(newDocument);
+    const result = await collection.insertOne(newDocument);
+    return result;
+  }
+
+  async checkCodigoState(document, C_digo) {
+    let existingOT = document.data && document.data.find(subObject => subObject.C_digo === C_digo);
+    if (existingOT && existingOT.C_digo === '00000') {
+      peticion = false;
+    }
+    return existingOT;
+  }
+
+  async updateDocument(document, collectionName) {
+    const result = await this.db.collection(collectionName).updateOne(
+      { _id: document._id },
+      { $set: { data: document.data } }
+    );
+    return result;
+  }
+
+  async createIfNotExists(collectionName, C_digo, body) {
+    try {
+      console.log('Verificando si el documento ya existe...');
+      await initializeMongoIds();
+
+      const docIndex = await documentExists(collectionName);
+
+      if (docIndex === -1) {
+        console.log('Documento no encontrado en mongoIds, creando uno nuevo...');
+        return await createNewDocument(collectionName, body);
+      }
+
+      let document = MongoDB.mongoIds[docIndex];
+
+      let existingOT = await this.checkCodigoState(document, C_digo);
+
+      while(peticion == false){
+        new Promise(resolve => setTimeout(resolve, 1));
+      }
+      if (existingOT) {
+        console.log('El objeto con C_digo ya existe, no se crea nada.');
+        return false;
+      }
+
+      console.log('C_digo no encontrado, agregando el nuevo objeto...');
+      document.data.push(...body.data);
+      return await updateDocument(document, collectionName);
+
+    } catch (error) {
+      console.error('Error al verificar y crear el documento:', error);
+      throw error;
+    }
+  }
+
+
+  // Método para cerrar la conexión a MongoDB
   async close() {
     try {
       await this.client.close(); // Cerrar la conexión

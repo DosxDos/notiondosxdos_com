@@ -46,7 +46,7 @@ class ots_notion_service {
                     this.body.hasOwnProperty("fotosDeOT") &&
                     this.body.hasOwnProperty("id")) {
 
-                    await mongo.connect(); // Conectar a la base de datos
+                    //await mongo.connect(); // Conectar a la base de datos
 
                     const mapearDatos = await this._mapearDatos(this.body);
 
@@ -57,7 +57,7 @@ class ots_notion_service {
 
                         console.log("otGuardada:", otGuardada);
 
-                        if (otGuardada == false) {
+                        if (otGuardada != false) {
                             //comprobamos si la OT ya existe en la base de datos
                             const response = await this.notion.databases.query({
                                 database_id: process.env.NOTION_DATABASE_ID,

@@ -148,14 +148,14 @@ class ots_crmzoho_service {
     // Método privado para guardar o actualizar la OT en MongoDB
     async _guardarEnMongoDB(zohoData) {
         const mongo = new MongoDB();
-        await mongo.connect();
+        //await mongo.connect();
         console.log('Conexión a MongoDB exitosa.');
 
         // Llamar a createIfNotExists para verificar si el documento existe
         const result = await mongo.createIfNotExists('ot', this.body.codigo, zohoData);
         console.log('Resultado de la inserción/actualización en MongoDB:', result);
 
-        await mongo.close();
+        //await mongo.close();
 
         // Devuelve verdadero si la OT fue creada o actualizada, falso si ya existía
         return result !== false;
@@ -276,18 +276,15 @@ class ots_crmzoho_service {
     // Método privado para actualizar el C_digo en MongoDB con el nuevo código de Zoho CRM
     async _actualizarCodigoMongo(nuevoCodigo) {
         const mongo = new MongoDB();
-        await mongo.connect();
         console.log('Actualizando código en MongoDB');
 
-        // Actualizamos el campo C_digo en MongoDB con el nuevo código de Zoho CRM
-        const result = await mongo.db.collection('ot').updateOne(
-            { 'data.C_digo': this._getPropertyValue('Nº') }, // Buscamos por el código original (que es 'this.body.codigo')
-            { $set: { 'data.$.C_digo': nuevoCodigo } } // Actualizamos el campo C_digo con el nuevo código
-        );
+        const actualizar = await mongo._actualizarCodigoMongo(nuevoCodigo);
 
-        console.log('MongoDB actualizado con el nuevo código:', result);
+        if (actualizar == false) {
+            console.log("No se ha podido actualizar el C_digo de mongoDB");
+        }
+        console.log('Se actualizo el código');
 
-        await mongo.close();
     }
 
     // Método privado para actualizar el código de la OT en Notion con el nuevo código

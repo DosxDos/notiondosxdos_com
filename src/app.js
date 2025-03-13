@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
+import MongoDB  from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 const app = express();
@@ -11,6 +12,12 @@ import { exec } from 'child_process';
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Crear una única instancia de MongoDB (Singleton)
+const mongo = new MongoDB();
+
+// Conectar a la base de datos de MongoDB
+mongo.connect();
 
 app.use(express.json()); // Analizar cuerpos application/json
 app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application/x-www-form-urlencoded
