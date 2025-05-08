@@ -2,6 +2,7 @@ import express from 'express';
 import ots_notion_controller from '../controllers/ots_notion_controller.js';
 import ots_crmzoho_controller from '../controllers/ots_crmzoho_controller.js';
 import leads_crm from '../controllers/ots_crmzoho_controller.js';
+import presupuesto_notion_controller from '../controllers/presupuesto_notion_controller.js';
 
 const router = express.Router();
 
@@ -70,6 +71,17 @@ router.get('/leads_crm', async (req, res) => {
 //Esto solo verifica que vaya todo bien
 router.get('/prueba', async (req, res) => {
     res.status(200).json({ success: true, message: "Prueba exitosa" });
+});
+
+/**
+ * Estas son las peticiones Custom como por ejemplo crear presupuestos, etc
+ */
+
+// Enpoint GET de las OTS en NOTION
+router.get('/presupuestoEscaparate/:codigoOT', async (req, res) => {
+    const presupuestoNotionController = new presupuesto_notion_controller({ codigoOT: req.params.codigoOT });
+    const response = await presupuestoNotionController.crearFormularioDeOtEscaparate();
+    res.status(response.code).json(response);
 });
 
 export default router;
