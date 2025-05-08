@@ -27,5 +27,4 @@ class presupuesto_notion_controller {
     }
 }
 
-
 export default presupuesto_notion_controller;
