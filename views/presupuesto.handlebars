@@ -1,0 +1,55 @@
+<div class="container">
+  <h1>Presupuesto OT: {{ot.Deal_Name}}</h1>
+  <p><strong>Código OT:</strong> {{ot.C_digo}}</p>
+  <p><strong>Cliente:</strong> {{ot.Account_Name.name}}</p>
+
+  {{#each puntos_de_venta}}
+    <hr>
+    <h2>PDV: {{PDV_relacionados.name}}</h2>
+
+    <h3></h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Tipo de trabajo</th>
+          <th>Horas</th>
+          <th>Días</th>
+          <th>Minutos</th>
+          <th>Descuento Realización</th>
+          <th>Urgente</th>
+          <th>Editar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each lineas}}
+          <tr>
+            <td>{{Product_Name}}</td>
+            <td><input type="text" value="{{Tipo_de_trabajo}}"></td>
+            <td><input type="number" value="{{Horas_actuaci_n}}"></td>
+            <td><input type="number" value="{{D_as_actuaci_n}}"></td>
+            <td><input type="number" value="{{Minutos_actuaci_n}}"></td>
+            <td><input type="text" value="{{Descuento_Realizaci_n}}"></td>
+            <td>
+              <select>
+                <option value="true" {{#if Urgente}}selected{{/if}}>Sí</option>
+                <option value="false" {{#unless Urgente}}selected{{/unless}}>No</option>
+              </select>
+            </td>
+            <td><button class="guardar-linea">💾</button></td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <h3>Escaparates</h3>
+    <ul>
+      {{#each escaparates}}
+        <li>{{Nombre_del_escaparate}} ({{Tipo_de_escaparate}})</li>
+      {{/each}}
+    </ul>
+  {{/each}}
+
+  <br><br>
+  <button id="generar-pdf">Generar PDF final</button>
+</div>

@@ -3,6 +3,8 @@ import express from 'express';
 import MongoDB  from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { engine } from 'express-handlebars';
+import axios from 'axios';
 const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
@@ -12,6 +14,15 @@ import { exec } from 'child_process';
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Configurar Handlebars como motor de vistas
+app.engine('handlebars', engine({
+  helpers: {
+    json: (context) => JSON.stringify(context, null, 2)
+  }
+}));
+app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, '../views'));
 
 // Crear una única instancia de MongoDB (Singleton)
 const mongo = new MongoDB();
@@ -24,6 +35,34 @@ app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application
 
 // Usar rutas principales
 app.use('/api', router);
+
+//Ruta donde se renderiza el presupuesto
+app.get('/presupuesto/:codigoOT', async (req, res) => {
+  try {
+    const codigoOT = req.params.codigoOT;
+
+    const apiRes = await axios.get(`http://localhost:${process.env.PORT}/api/presupuestoEscaparate/${codigoOT}`);
+    const result = apiRes.data;
+
+    if (!result.status) throw new Error(result.message);
+
+    const datos = result.data?.data?.[0];
+    if (!datos) {
+      return res.status(500).send('Error: no se encontraron datos de la OT');
+    }
+
+    res.render('presupuesto', {
+      layout: 'main',
+      ot: datos,
+      puntos_de_venta: datos.puntos_de_venta
+    });
+
+  } catch (err) {
+    console.error('❌ ERROR en /presupuesto/:codigoOT:', err);
+    res.status(500).send('Error al cargar el presupuesto: ' + err.message);
+  }
+});
+
 
 // Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
 app.use(express.static(path.join(__dirname, '../public')));
