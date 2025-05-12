@@ -24,18 +24,16 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         const { width, height } = page.getSize();
 
         const margenDerechoX = width - 40;
-        page.drawLine({ start: { x: margenDerechoX, y: 0 }, end: { x: margenDerechoX, y: height - 150 }, thickness: 2, color: colorRojo });
+        page.drawLine({ start: { x: margenDerechoX, y: 15 }, end: { x: margenDerechoX, y: height - 150 }, thickness: 2, color: colorRojo });
 
         const footerYH = 620;
         page.drawLine({ start: { x: 450, y: footerYH }, end: { x: width - 15, y: footerYH }, thickness: 1, color: colorRojo });
 
         const footerY = 40;
-        page.drawLine({ start: { x: 0, y: footerY }, end: { x: width, y: footerY }, thickness: 2, color: colorRojo });
+        page.drawLine({ start: { x: 15, y: footerY }, end: { x: width - 15, y: footerY }, thickness: 2, color: colorRojo });
 
         page.drawText("presupuesto", { x: 460, y: footerYH + 8, size: 10, font, color: colorNegro });
-
         page.drawText("nº." + datosOT.C_digo, { x: 470, y: footerYH - 12, size: 10, font, color: colorNegro });
-
         page.drawText(fechaActual, { x: 40, y: footerY + 4, size: 10, font, color: colorNegro });
         page.drawText(textoVertical, { x: margenDerechoX + 20, y: 80, size: 9, font, color: colorGris, rotate: degrees(90) });
 
@@ -97,17 +95,60 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     drawText(textoListado, 40, blockY);
     blockY -= 14;
 
-    const productos = new Set();
-    for (const pdv of datosOT.puntos_de_venta || []) {
-        for (const linea of pdv.lineas || []) {
-            if (linea.Product_Name) productos.add(linea.Product_Name);
-        }
+    const listaFija = [
+        'Planteamiento de sus elementos con el espacio.',
+        'Realización de propuestas y bocetos enviados hasta su aprobación.',
+        'Realización de materiales necesarios.',
+        'Portes y desplazamientos, entre islas, a los puntos de venta indicados.',
+        'Montaje de escaparates, dentro de nuestras rutas de trabajo.'
+    ];
+
+    for (const item of listaFija) {
+        blockY = drawMultiline(`• ${item}`, 50, blockY);
     }
 
-    let index = 1;
-    for (const producto of productos) {
-        blockY = drawMultiline(`${index}. ${producto}`, 50, blockY);
-        index++;
+    blockY -= 30;
+    const drawTableCell = (text, x, y, width, height) => {
+        page.drawRectangle({ x, y: y - height, width, height, borderColor: colorNegro, borderWidth: 1 });
+        page.drawText(text, { x: x + 4, y: y - height + 4, size: 10, font });
+    };
+
+    const colX = [50, 300, 370, 470];
+    const colWidth = [250, 70, 100, 70];
+    const rowHeight = 20;
+
+    drawTableCell('CONCEPTO', colX[0], blockY, colWidth[0], rowHeight);
+    drawTableCell('Uds.', colX[1], blockY, colWidth[1], rowHeight);
+    drawTableCell('Importe', colX[2], blockY, colWidth[2], rowHeight);
+    drawTableCell('Total', colX[3], blockY, colWidth[3], rowHeight);
+    blockY -= rowHeight;
+
+    for (const pdv of datosOT.puntos_de_venta || []) {
+        const nombre = pdv.PDV_relacionados?.name || 'Punto de venta';
+        const totalEscaparates = (pdv.escaparates || []).length;
+
+        drawTableCell(nombre, colX[0], blockY, colWidth[0], rowHeight);
+        drawTableCell(`${totalEscaparates}`, colX[1], blockY, colWidth[1], rowHeight);
+        drawTableCell('0 €', colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+        blockY -= rowHeight;
+    }
+
+    const pages = pdfDoc.getPages();
+    const totalPages = pages.length;
+    for (let i = 0; i < totalPages; i++) {
+        const currentPage = pages[i];
+        const pageWidth = currentPage.getSize().width;
+        const fontSize = 10;
+        const text = `${i + 1}`;
+        const textWidth = font.widthOfTextAtSize(text, fontSize);
+        currentPage.drawText(text, {
+            x: pageWidth - 40 - textWidth + 20,
+            y: 20,
+            size: fontSize,
+            font,
+            color: colorNegro
+        });
     }
 
     const pdfBytes = await pdfDoc.save();
