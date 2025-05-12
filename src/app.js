@@ -11,6 +11,9 @@ import router from './routes/index.js';
 import respuesta from './utils/respuesta_util.js';
 import { exec } from 'child_process';
 
+app.use(express.json({ limit: '10mb' })); //Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
+
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
