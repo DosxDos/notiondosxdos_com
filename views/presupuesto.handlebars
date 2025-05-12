@@ -7,49 +7,132 @@
     <hr>
     <h2>PDV: {{PDV_relacionados.name}}</h2>
 
-    <h3></h3>
+    {{#each escaparates}}
+      <h3>Escaparate: {{Nombre_del_escaparate}} ({{Tipo_de_escaparate}})</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Foto</th>
+            <th>Concepto</th>
+            <th>Alto</th>
+            <th>Ancho</th>
+            <th>Material</th>
+            <th>Precio/M.Prima</th>
+            <th>Precio Unitario</th>
+            <th>Unidades</th>
+            <th>Total</th>
+            <th>Escaparate</th>
+            <th>Total</th>
+            <th>Montaje</th>
+            <th>Editar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each (range 1 10)}}
+            {{#with (concat "Elemento" this) as |elKey|}}
+              {{#if (lookup ../.. this.[elKey])}}
+              <tr>
+                <td>
+                  <input type="text" value="{{lookup ../../lineas.[0] 'Fotos'}}">
+                </td>
+                <td>
+                  <select>
+                    <option selected>{{lookup ../../this (concat "Elemento" this)}}</option>
+                    <!-- Otras opciones las añadirás más tarde -->
+                  </select>
+                </td>
+                <td>
+                  <input type="number" value="{{lookup ../../this (concat "ALT" this)}}">
+                </td>
+                <td>
+                  <input type="number" value="{{lookup ../../this (concat "ANC" this)}}">
+                </td>
+                <td>
+                  <select>
+                    <option selected>{{lookup ../../this (concat "Material" this)}}</option>
+                    <!-- Otras opciones las añadirás más tarde -->
+                  </select>
+                </td>
+                <td>
+                  <input type="number" class="precio-mp" step="any">
+                </td>
+                <td>
+                  <input type="number" class="precio-unitario" step="any">
+                </td>
+                <td>
+                  <input type="number" value="{{lookup ../../this (concat "UD" this)}}">
+                </td>
+                <td>
+                  <input type="number" class="total-elemento" readonly>
+                </td>
+                <td>{{../Nombre_del_escaparate}}</td>
+                <td>
+                  <input type="number" class="total-escaparate" readonly>
+                </td>
+                <td>
+                  <input type="number" class="montaje" step="any">
+                </td>
+                <td>
+                  <button class="guardar-escaparate">💾</button>
+                </td>
+              </tr>
+              {{/if}}
+            {{/with}}
+          {{/each}}
+        </tbody>
+      </table>
+    {{/each}}
+
+    <!-- NUEVO ESCAPARATE -->
+    <h4>Crear nuevo escaparate</h4>
     <table>
       <thead>
         <tr>
-          <th>Producto</th>
-          <th>Tipo de trabajo</th>
-          <th>Horas</th>
-          <th>Días</th>
-          <th>Minutos</th>
-          <th>Descuento Realización</th>
-          <th>Urgente</th>
-          <th>Editar</th>
+          <th>Foto</th>
+          <th>Concepto</th>
+          <th>Alto</th>
+          <th>Ancho</th>
+          <th>Material</th>
+          <th>Precio/M.Prima</th>
+          <th>Precio Unitario</th>
+          <th>Unidades</th>
+          <th>Total</th>
+          <th>Escaparate</th>
+          <th>Total</th>
+          <th>Montaje</th>
+          <th>Guardar</th>
         </tr>
       </thead>
       <tbody>
-        {{#each lineas}}
-          <tr>
-            <td>{{Product_Name}}</td>
-            <td><input type="text" value="{{Tipo_de_trabajo}}"></td>
-            <td><input type="number" value="{{Horas_actuaci_n}}"></td>
-            <td><input type="number" value="{{D_as_actuaci_n}}"></td>
-            <td><input type="number" value="{{Minutos_actuaci_n}}"></td>
-            <td><input type="text" value="{{Descuento_Realizaci_n}}"></td>
-            <td>
-              <select>
-                <option value="true" {{#if Urgente}}selected{{/if}}>Sí</option>
-                <option value="false" {{#unless Urgente}}selected{{/unless}}>No</option>
-              </select>
-            </td>
-            <td><button class="guardar-linea">💾</button></td>
-          </tr>
-        {{/each}}
+        <tr>
+          <td><input type="text" placeholder="URL Foto"></td>
+          <td>
+            <select>
+              <option value="">-- Seleccionar --</option>
+            </select>
+          </td>
+          <td><input type="number" placeholder="Alto"></td>
+          <td><input type="number" placeholder="Ancho"></td>
+          <td>
+            <select>
+              <option value="">-- Seleccionar --</option>
+            </select>
+          </td>
+          <td><input type="number" class="precio-mp" step="any"></td>
+          <td><input type="number" class="precio-unitario" step="any"></td>
+          <td><input type="number" placeholder="UD"></td>
+          <td><input type="number" class="total-elemento" readonly></td>
+          <td><input type="text" placeholder="Nombre escaparate"></td>
+          <td><input type="number" class="total-escaparate" readonly></td>
+          <td><input type="number" class="montaje" step="any"></td>
+          <td><button class="guardar-nuevo-escaparate">💾</button></td>
+        </tr>
       </tbody>
     </table>
-
-    <h3>Escaparates</h3>
-    <ul>
-      {{#each escaparates}}
-        <li>{{Nombre_del_escaparate}} ({{Tipo_de_escaparate}})</li>
-      {{/each}}
-    </ul>
   {{/each}}
 
   <br><br>
-  <button id="generar-pdf">Generar PDF final</button>
+  <div style="text-align: center;">
+    <button id="generar-pdf">Generar PDF final</button>
+  </div>
 </div>

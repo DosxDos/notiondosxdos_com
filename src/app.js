@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import MongoDB  from './DB/MongoDB.js';
+import MongoDB from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { engine } from 'express-handlebars';
@@ -18,7 +18,19 @@ const __dirname = path.dirname(__filename);
 // Configurar Handlebars como motor de vistas
 app.engine('handlebars', engine({
   helpers: {
-    json: (context) => JSON.stringify(context, null, 2)
+    json: (context) => JSON.stringify(context, null, 2),
+    range: function (from, to) {
+      const result = [];
+      for (let i = from; i <= to; i++) {
+        result.push(i);
+      }
+      return result;
+    },
+
+    concat: function (...args) {
+      args.pop(); // elimina options de Handlebars
+      return args.join('');
+    }
   }
 }));
 app.set('view engine', 'handlebars');
