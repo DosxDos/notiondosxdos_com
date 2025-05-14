@@ -1,10 +1,35 @@
 import express from 'express';
+import multer from 'multer';
 import ots_notion_controller from '../controllers/ots_notion_controller.js';
 import ots_crmzoho_controller from '../controllers/ots_crmzoho_controller.js';
 import leads_crm from '../controllers/ots_crmzoho_controller.js';
 import presupuesto_notion_controller from '../controllers/presupuesto_notion_controller.js';
+import path from 'path';
+import fs from 'fs';
+import xlsx from 'xlsx';
+import mysql from 'mysql2/promise';
+
 
 const router = express.Router();
+
+// Ruta absoluta segura a la carpeta uploads
+const uploadsDir = path.resolve('uploads');
+
+// Crear carpeta uploads si no existe
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
+// Configurar Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `escaparate_${Date.now()}${path.extname(file.originalname)}`);
+    },
+});
+const upload = multer({ storage });
 
 /**
  * Estas son las peticiones de OTS de Notion
@@ -89,5 +114,16 @@ router.post('/descargarPresupuesto', async (req, res) => {
     await controller.generarPDFdePresupuesto(req, res);
 });
 
+//convierte el excel de precios de escaparate un json y lo sube a la base de datos de mySQL
+router.post('/subirExcelPreciosEscaparate', upload.single('archivoExcel'), async (req, res) => {
+    try {
+        const controller = new presupuesto_notion_controller();
+        const resultado = await controller.subirPreciosEscaparate(req.file.path);
+        res.status(200).json({ mensaje: resultado });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al subir y procesar el archivo' });
+    }
+});
 
 export default router;
