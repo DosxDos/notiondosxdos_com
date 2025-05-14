@@ -109,6 +109,7 @@ router.get('/presupuestoEscaparate/:codigoOT', async (req, res) => {
     res.status(response.code).json(response);
 });
 
+// Este endpoint genera el PDF del presupuesto
 router.post('/descargarPresupuesto', async (req, res) => {
     const controller = new presupuesto_notion_controller(req.body);
     await controller.generarPDFdePresupuesto(req, res);

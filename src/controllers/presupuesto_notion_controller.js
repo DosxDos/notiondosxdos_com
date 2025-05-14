@@ -3,6 +3,8 @@ import respuesta from '../utils/respuesta_util.js';
 import presupuesto_notion_service from '../services/presupuesto_notion_service.js';
 // Archivo: controllers/presupuesto_notion_controller.js
 import { generarPresupuestoPDF } from '../utils/pdf_presupuesto_utils.js';
+import { db } from '../DB/mysqlConnection.js'; // ✅ ahora sí es una exportación válida
+
 
 import xlsx from 'xlsx';
 import fs from 'fs';
@@ -68,41 +70,52 @@ class presupuesto_notion_controller {
 
     async subirPreciosEscaparate(filePath) {
         try {
-            // Leer el Excel y convertir a JSON
             const workbook = xlsx.readFile(filePath);
             const sheetName = workbook.SheetNames[0];
             const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-            // Conexión MySQL
-            const connection = await mysql.createConnection({
-                host: 'localhost',
-                user: 'root',
-                password: 'root_password',
-                database: 'presupuestos',
-            });
-
+    
+            // Conectar a la base de datos MySQL
+            const connection = await db.connect();
+    
             for (const row of data) {
-                console.log(row);
                 const nombre = row['__EMPTY']?.toString().trim();
                 const importe = row['__EMPTY_1'] ?? null;
-                const observaciones = row['__EMPTY_3'] ?? null; // si aplica
-
-                if (!nombre || !importe) continue; // Evita insertar valores vacíos
-
-                await connection.execute(
-                    'INSERT INTO precio_coste_escaparate (nombre, importe, observaciones) VALUES (?, ?, ?)',
-                    [nombre, importe, observaciones]
+                const observaciones = row['__EMPTY_3'] ?? null;
+    
+                if (!nombre || importe === null) continue;
+    
+                // Verificar si ya existe un registro con ese nombre
+                const [existing] = await connection.execute(
+                    'SELECT importe FROM precio_coste_escaparate WHERE nombre = ?',
+                    [nombre]
                 );
+    
+                if (existing.length === 0) {
+                    // No existe, insertar nuevo registro
+                    await connection.execute(
+                        'INSERT INTO precio_coste_escaparate (nombre, importe, observaciones) VALUES (?, ?, ?)',
+                        [nombre, importe, observaciones]
+                    );
+                } else {
+                    const importeActual = existing[0].importe;
+    
+                    if (parseFloat(importeActual) !== parseFloat(importe)) {
+                        // Existe con distinto importe, actualizar
+                        await connection.execute(
+                            'UPDATE precio_coste_escaparate SET importe = ?, observaciones = ? WHERE nombre = ?',
+                            [importe, observaciones, nombre]
+                        );
+                    }
+                    // Si el importe es el mismo, no se hace nada
+                }
             }
-
-            await connection.end();
-            fs.unlinkSync(filePath); // Limpieza del archivo temporal
-
-            return 'Datos guardados correctamente';
+            fs.unlinkSync(filePath); // Eliminar el archivo temporal
+    
+            return 'Datos procesados correctamente';
         } catch (error) {
             throw error;
         }
-    }
+    }    
 }
 
 export default presupuesto_notion_controller;
