@@ -69,7 +69,7 @@ app.get('/presupuesto/:codigoOT', async (req, res) => {
     res.render('presupuesto', {
       layout: 'main',
       ot: datos,
-      puntos_de_venta: datos.puntos_de_venta
+      /* puntos_de_venta: datos.puntos_de_venta */
     });
 
   } catch (err) {

@@ -1,138 +1,121 @@
-<div class="container">
-  <h1>Presupuesto OT: {{ot.Deal_Name}}</h1>
+<div class="max-w-[1800px] mx-auto px-8 mt-10 mb-16 font-sans text-gray-900 bg-gray-50">
+  <h1 class="text-3xl font-semibold mb-4 text-gray-800">Presupuesto OT: {{ot.Deal_Name}}</h1>
   <p><strong>Código OT:</strong> {{ot.C_digo}}</p>
   <p><strong>Cliente:</strong> {{ot.Account_Name.name}}</p>
 
-  {{#each puntos_de_venta}}
-    <hr>
-    <h2>PDV: {{PDV_relacionados.name}}</h2>
+  {{#each ot.puntos_de_venta as |pdv index|}}
+  <hr class="my-6 border-gray-300">
+  <h2 class="text-2xl font-semibold text-gray-800 mb-2">PDV: {{pdv.PDV_relacionados.name}}</h2>
 
-    {{#each escaparates}}
-      <h3>Escaparate: {{Nombre_del_escaparate}} ({{Tipo_de_escaparate}})</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Foto</th>
-            <th>Concepto</th>
-            <th>Alto</th>
-            <th>Ancho</th>
-            <th>Material</th>
-            <th>Precio/M.Prima</th>
-            <th>Precio Unitario</th>
-            <th>Unidades</th>
-            <th>Total</th>
-            <th>Escaparate</th>
-            <th>Total</th>
-            <th>Montaje</th>
-            <th>Editar</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each (range 1 10)}}
-            {{#with (concat "Elemento" this) as |elKey|}}
-              {{#if (lookup ../.. this.[elKey])}}
-              <tr>
-                <td>
-                  <input type="text" value="{{lookup ../../lineas.[0] 'Fotos'}}">
-                </td>
-                <td>
-                  <select>
-                    <option selected>{{lookup ../../this (concat "Elemento" this)}}</option>
-                    <!-- Otras opciones las añadirás más tarde -->
-                  </select>
-                </td>
-                <td>
-                  <input type="number" value="{{lookup ../../this (concat "ALT" this)}}">
-                </td>
-                <td>
-                  <input type="number" value="{{lookup ../../this (concat "ANC" this)}}">
-                </td>
-                <td>
-                  <select>
-                    <option selected>{{lookup ../../this (concat "Material" this)}}</option>
-                    <!-- Otras opciones las añadirás más tarde -->
-                  </select>
-                </td>
-                <td>
-                  <input type="number" class="precio-mp" step="any">
-                </td>
-                <td>
-                  <input type="number" class="precio-unitario" step="any">
-                </td>
-                <td>
-                  <input type="number" value="{{lookup ../../this (concat "UD" this)}}">
-                </td>
-                <td>
-                  <input type="number" class="total-elemento" readonly>
-                </td>
-                <td>{{../Nombre_del_escaparate}}</td>
-                <td>
-                  <input type="number" class="total-escaparate" readonly>
-                </td>
-                <td>
-                  <input type="number" class="montaje" step="any">
-                </td>
-                <td>
-                  <button class="guardar-escaparate">💾</button>
-                </td>
-              </tr>
-              {{/if}}
-            {{/with}}
-          {{/each}}
-        </tbody>
-      </table>
-    {{/each}}
-
-    <!-- NUEVO ESCAPARATE -->
-    <h4>Crear nuevo escaparate</h4>
-    <table>
-      <thead>
+  {{#if pdv.escaparates.[0]}}
+  {{#with pdv.escaparates.[0] as |esc|}}
+  <div class="overflow-x-auto">
+    <table id="tabla-pdv-{{index}}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200">
+      <thead class="bg-red-700 text-white text-sm text-center">
         <tr>
-          <th>Foto</th>
-          <th>Concepto</th>
-          <th>Alto</th>
-          <th>Ancho</th>
-          <th>Material</th>
-          <th>Precio/M.Prima</th>
-          <th>Precio Unitario</th>
-          <th>Unidades</th>
-          <th>Total</th>
-          <th>Escaparate</th>
-          <th>Total</th>
-          <th>Montaje</th>
-          <th>Guardar</th>
+          <th class="p-3">Foto</th>
+          <th class="p-3">Concepto</th>
+          <th class="p-3">Alto</th>
+          <th class="p-3">Ancho</th>
+          <th class="p-3">Material</th>
+          <th class="p-3">Precio/M.Prima</th>
+          <th class="p-3">Precio Unitario</th>
+          <th class="p-3">Unidades</th>
+          <th class="p-3">Total</th>
+          <th class="p-3">Total Escaparate</th>
+          <th class="p-3">Montaje</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><input type="text" placeholder="URL Foto"></td>
-          <td>
-            <select>
-              <option value="">-- Seleccionar --</option>
+        {{#each (range 1 10) as |i|}}
+        {{#with (concat "Elemento" i) as |elKey|}}
+        {{#if (lookup esc elKey)}}
+        <tr class="border-b text-center">
+          <td class="p-2">
+            {{#if pdv.lineas.[0].Fotos}}
+            <a href="{{pdv.lineas.[0].Fotos}}" target="_blank"
+              class="block w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50 text-gray-800 text-center no-underline hover:text-black">
+              Ver imagen
+            </a>
+            {{else}}
+            <label
+              class="cursor-pointer inline-block w-full p-1.5 border border-gray-300 rounded bg-gray-50 text-center text-sm text-gray-800 hover:bg-gray-100">
+              Seleccionar archivo
+              <input type="file" accept="image/*" class="hidden default-file-input">
+            </label>
+            {{/if}}
+
+          </td>
+          <td class="p-2">
+            <select class="w-full p-1.5 border border-gray-300 rounded">
+              <option selected>{{lookup esc elKey}}</option>
             </select>
           </td>
-          <td><input type="number" placeholder="Alto"></td>
-          <td><input type="number" placeholder="Ancho"></td>
-          <td>
-            <select>
-              <option value="">-- Seleccionar --</option>
+          <td class="p-2"><input type="number" value="{{lookup esc (concat "ALT" i)}}" step="any"
+              class="w-16 p-1.5 border rounded text-sm"></td>
+          <td class="p-2"><input type="number" value="{{lookup esc (concat "ANC" i)}}" step="any"
+              class="w-16 p-1.5 border rounded text-sm"></td>
+          <td class="p-2">
+            <select class="w-full p-1.5 border border-gray-300 rounded">
+              <option selected>{{lookup esc (concat "Material" i)}}</option>
             </select>
           </td>
-          <td><input type="number" class="precio-mp" step="any"></td>
-          <td><input type="number" class="precio-unitario" step="any"></td>
-          <td><input type="number" placeholder="UD"></td>
-          <td><input type="number" class="total-elemento" readonly></td>
-          <td><input type="text" placeholder="Nombre escaparate"></td>
-          <td><input type="number" class="total-escaparate" readonly></td>
-          <td><input type="number" class="montaje" step="any"></td>
-          <td><button class="guardar-nuevo-escaparate">💾</button></td>
+          <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded"></td>
+          <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded"></td>
+          <td class="p-2"><input type="number" value="{{lookup esc (concat " UD" i)}}" step="any"
+              class="w-16 p-1.5 border rounded text-sm"></td>
+          <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded"></td>
+          <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded"></td>
+          <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded"></td>
         </tr>
+        {{/if}}
+        {{/with}}
+        {{/each}}
       </tbody>
     </table>
+  </div>
+
+  <div class="flex justify-end mt-2 mb-8">
+    <button
+      class="add-row w-8 h-8 flex items-center justify-center text-lg font-bold text-white bg-red-700 hover:bg-red-800 rounded"
+      data-target="tabla-pdv-{{index}}">+</button>
+
+  </div>
+  {{/with}}
+  {{else}}
+  <p class="italic text-gray-600 mb-2">Este punto de venta no tiene escaparates registrados.</p>
+  <div class="overflow-x-auto">
+    <table id="tabla-pdv-{{index}}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
+      <thead class="bg-red-700 text-white text-sm text-center">
+        <tr>
+          <th class="p-3">Foto</th>
+          <th class="p-3">Concepto</th>
+          <th class="p-3">Alto</th>
+          <th class="p-3">Ancho</th>
+          <th class="p-3">Material</th>
+          <th class="p-3">Precio/M.Prima</th>
+          <th class="p-3">Precio Unitario</th>
+          <th class="p-3">Unidades</th>
+          <th class="p-3">Total</th>
+          <th class="p-3">Total Escaparate</th>
+          <th class="p-3">Montaje</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-end mt-2 mb-8">
+    <button
+      class="add-row w-8 h-8 flex items-center justify-center text-lg font-bold text-white bg-red-700 hover:bg-red-800 rounded"
+      data-target="tabla-pdv-{{index}}">+</button>
+  </div>
+  {{/if}}
   {{/each}}
 
-  <br><br>
-  <div style="text-align: center;">
-    <button id="generar-pdf">Generar PDF final</button>
+  <div class="flex justify-center mt-12">
+    <button id="generar-pdf" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded shadow">
+      Generar PDF
+    </button>
   </div>
 </div>
