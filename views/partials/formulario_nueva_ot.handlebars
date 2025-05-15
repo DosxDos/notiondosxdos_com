@@ -1,0 +1,64 @@
+<div id="formulario-nueva-ot" class="max-w-5xl mx-auto mt-12 hidden font-sans px-6">
+  <!-- Título principal -->
+  <h2 class="text-3xl font-bold text-gray-800 mb-6">Crear nueva OT para: <span id="nombre-cliente-formulario" class="text-red-700"></span></h2>
+
+  <!-- Sección: Selección de puntos de venta -->
+  <div class="mb-10">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Selecciona los puntos de venta</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="contenedor-pdvs">
+      <!-- Aquí se mostrarán los puntos de venta relacionados con el cliente -->
+    </div>
+  </div>
+
+  <!-- Botón para añadir nuevo PDV manualmente (si se necesita) -->
+  <div class="mb-10">
+    <button
+      class="bg-white border border-red-700 text-red-700 px-4 py-2 rounded hover:bg-red-100 transition"
+      id="agregar-pdv-manual">
+      + Agregar PDV manualmente
+    </button>
+  </div>
+
+  <!-- Tabla vacía (simulación del presupuesto) -->
+  <div class="overflow-x-auto mb-8">
+    <table class="w-full text-sm bg-white rounded-md shadow border border-gray-200">
+      <thead class="bg-red-700 text-white text-sm text-center">
+        <tr>
+          <th class="p-3">Foto</th>
+          <th class="p-3">Concepto</th>
+          <th class="p-3">Alto</th>
+          <th class="p-3">Ancho</th>
+          <th class="p-3">Material</th>
+          <th class="p-3">Precio/M.Prima</th>
+          <th class="p-3">Precio Unitario</th>
+          <th class="p-3">Unidades</th>
+          <th class="p-3">Total</th>
+          <th class="p-3">Total Escaparate</th>
+          <th class="p-3">Montaje</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Aquí irán las filas de escaparates -->
+        <tr class="border-b text-center">
+          <td class="p-2" colspan="11" class="text-gray-500 italic">Todavía no hay líneas añadidas</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Botón para añadir línea -->
+  <div class="flex justify-end mb-12">
+    <button
+      class="add-row bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
+      data-target="tabla-nueva-ot">
+      + Añadir línea
+    </button>
+  </div>
+
+  <!-- Botón final para guardar o generar PDF -->
+  <div class="flex justify-center">
+    <button class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded shadow">
+      Generar PDF de nueva OT
+    </button>
+  </div>
+</div>

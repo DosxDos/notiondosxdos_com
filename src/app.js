@@ -20,6 +20,7 @@ const __dirname = path.dirname(__filename);
 
 // Configurar Handlebars como motor de vistas
 app.engine('handlebars', engine({
+  partialsDir: path.join(__dirname, '../views/partials'),
   helpers: {
     json: (context) => JSON.stringify(context, null, 2),
     range: function (from, to) {
@@ -51,6 +52,14 @@ app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application
 // Usar rutas principales
 app.use('/api', router);
 
+// Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 //Ruta donde se renderiza el presupuesto
 app.get('/presupuesto/:codigoOT', async (req, res) => {
   try {
@@ -76,15 +85,6 @@ app.get('/presupuesto/:codigoOT', async (req, res) => {
     console.error('❌ ERROR en /presupuesto/:codigoOT:', err);
     res.status(500).send('Error al cargar el presupuesto: ' + err.message);
   }
-});
-
-
-// Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Ruta GET para verificar el webhook de github

@@ -1,7 +1,111 @@
 let materialesDisponibles = {}; //variable global de materiales con su precio
+let todosLosClientes = [];
+let clienteSeleccionado = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarMateriales();
+    await cargarClientes();
+
+    //Lógica de buscador_cliente
+
+    const inputBuscador = document.getElementById('buscador-cliente');
+    const sugerenciasUl = document.getElementById('sugerencias-clientes');
+    const nombreClienteSpan = document.getElementById('nombre-cliente');
+    const infoCliente = document.getElementById('info-cliente');
+    const listaOTs = document.getElementById('lista-ots');
+    const botonNuevaOt = document.getElementById('crear-nueva-ot');
+
+    // Autocompletado
+    inputBuscador.addEventListener('input', () => {
+        const termino = inputBuscador.value.toLowerCase();
+        sugerenciasUl.innerHTML = '';
+        if (!termino) {
+            sugerenciasUl.classList.add('hidden');
+            return;
+        }
+
+        const filtrados = todosLosClientes.filter(c =>
+            c.Account_Name?.toLowerCase().includes(termino) || c.Account_Name?.name?.toLowerCase().includes(termino)
+        );
+
+        if (filtrados.length === 0) {
+            sugerenciasUl.classList.add('hidden');
+            return;
+        }
+
+        filtrados.slice(0, 10).forEach(cliente => {
+            const li = document.createElement('li');
+            li.textContent = cliente.Account_Name?.name || cliente.Account_Name || 'Nombre desconocido';
+            li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+            li.addEventListener('click', async () => {
+                clienteSeleccionado = cliente;
+                inputBuscador.value = li.textContent;
+                sugerenciasUl.classList.add('hidden');
+                nombreClienteSpan.textContent = li.textContent;
+                infoCliente.classList.remove('hidden');
+                await mostrarOTsDelCliente(cliente);
+            });
+            sugerenciasUl.appendChild(li);
+        });
+
+        sugerenciasUl.classList.remove('hidden');
+    });
+
+    // Botón nueva OT
+    const contenedorFormularioNuevaOt = document.getElementById('formulario-nueva-ot');
+
+    botonNuevaOt.addEventListener('click', () => {
+        // Oculta la lista de OTs
+        document.getElementById('info-cliente').classList.add('hidden');
+
+        // Muestra el formulario de nueva OT
+        contenedorFormularioNuevaOt?.classList.remove('hidden');
+
+        // Si necesitas pasar el nombre del cliente
+        const nombre = clienteSeleccionado.Account_Name?.name || 'Nombre desconocido';
+        document.getElementById('nombre-cliente-formulario').textContent = nombre;
+    });
+
+
+    async function cargarClientes() {
+        try {
+            const res = await fetch('/api/recogerModuloZoho?modulo=Clientes');
+            const json = await res.json();
+            todosLosClientes = json.proveedores || [];
+        } catch (err) {
+            console.error('Error al cargar clientes:', err);
+        }
+    }
+
+    async function mostrarOTsDelCliente(cliente) {
+        const idCliente = cliente.id;
+        try {
+            const res = await fetch(`/api/recogerModuloZoho?modulo=OTs&criteria=(Account_Name.id:equals:${idCliente})`);
+            const json = await res.json();
+
+            listaOTs.innerHTML = '';
+            const ots = json.proveedores || [];
+
+            if (ots.length === 0) {
+                listaOTs.innerHTML = '<li class="text-gray-500">Este cliente no tiene OTs registradas.</li>';
+                return;
+            }
+
+            ots.forEach(ot => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+          <a href="/presupuesto/${ot.C_digo}" class="text-red-700 hover:underline">
+            ${ot.Deal_Name || 'OT sin nombre'} (Código: ${ot.C_digo})
+          </a>
+        `;
+                listaOTs.appendChild(li);
+            });
+        } catch (err) {
+            console.error('Error al cargar OTs del cliente:', err);
+        }
+    }
+
+    //Lógica de ot_existente
 
     // Traer los materiales desde el backend para mostrar en el select
     async function cargarMateriales() {
