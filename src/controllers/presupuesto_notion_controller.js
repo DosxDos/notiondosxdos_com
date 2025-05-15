@@ -6,7 +6,7 @@ import { generarPresupuestoPDF } from '../utils/pdf_presupuesto_utils.js';
 import { db } from '../DB/mysqlConnection.js';
 import Zoho from '../zoho_api/Zoho.js';
 import axios from 'axios';    // Usamos axios para hacer la solicitud HTTP
-
+import { diccionarioCamposZoho } from '../constantes/constantes.js'; // ajusta la ruta si es necesario
 
 import xlsx from 'xlsx';
 import fs from 'fs';
@@ -104,88 +104,37 @@ class presupuesto_notion_controller {
         }
     }
 
-    //Recogemos todos los proveedores de Zoho y si hay mas de 200 vamos recorriendolos para devolverlos todos sin paginación
-    async recogerProveedoresZoho() {
-        const zoho = new Zoho();
-        let allAccounts = [];
-        let page = 1;
-        let moreRecords = true;
-
+    //Esta lógica permite subir el excel de los materiales de los escaparates (El campo 1 debe ser el nombre del escaparate y el campo 2 el precio)
+    async getMaterialesMySql() {
         try {
-            const accessToken = await zoho.getAccessToken();
+            // Conectar a la base de datos MySQL
+            const connection = await db.connect();
 
-            while (moreRecords) {
-                const response = await axios.get(`https://www.zohoapis.eu/crm/v2/Accounts?page=${page}`, {
-                    headers: {
-                        Authorization: `Zoho-oauthtoken ${accessToken}`,
-                    },
-                });
+            // Verificar si ya existe un registro con ese nombre
+            const [rows] = await connection.execute('SELECT * FROM precio_coste_escaparate');
 
-                const data = response.data?.data || [];
-                const info = response.data?.info || {};
 
-                allAccounts.push(...data);
-                moreRecords = info.more_records === true;
-                page++;
-            }
-
-            if (allAccounts.length > 0) {
-                return {
-                    success: true,
-                    data: allAccounts,
-                    message: `Se han obtenido ${allAccounts.length} proveedores desde Zoho.`,
-                };
+            if (rows.length === 0) {
+                return 'No existen registros en la tabla precio_coste_escaparate';
             } else {
-                return {
-                    success: false,
-                    message: 'No se encontraron registros en el módulo Accounts.',
-                };
+                return { materiales: rows };
             }
         } catch (error) {
-            console.error('❌ Error al recoger proveedores de Zoho:', error.message);
-            return {
-                success: false,
-                message: 'Error al recoger a los proveedores de Zoho.',
-                error: error.message,
-            };
+            res.status(500).json({ message: 'Error al generar la subida de precios', error: error.message });
         }
     }
 
     //Recogemos todos los puntos de venta de de Zoho y si hay mas de 200 vamos recorriendolos para devolverlos todos sin paginación
     async recogerModuloZoho(endpoint, criteria = null) {
-        const diccionarioCamposZoho = {
-            'LineasDeOt': 'Products',
-            'OTs': 'Deals',
-            'Rutas': 'Rutas',
-            'Montadores': 'Montadores',
-            'PuntosDeVenta': 'Puntos_de_venta',
-            'Contactos': 'Contacts',
-            'Clientes': 'Accounts',
-            'NotificacionesRutas': 'Notificaciones_Rutas',
-            'Incidencias': 'Incidencias',
-            'Escaparates': 'Escaparates',
-            'Impuestos': 'Impuestos',
-            'PreciosMaterialesYServ': 'Precios_Materiales',
-            'PreciosLogos': 'Precios_Logos',
-            'PrecioMontajeImagenes': 'Precios_Montaje_Im_genes',
-            'PreciosMontajeLogos': 'Precios_Montaje_Logos',
-            'DescuentoMontajeLogos': 'Descuento_Montaje_Logos',
-            'Analisis': 'Analytics',
-            'MisTrabajos': 'Approvals',
-            'MontadoresRutas': 'Montadores_Rutas',
-            'OTPDV': 'OT_PDV',
-            'Variables': 'Variables'
-        };
-    
         const modulo = diccionarioCamposZoho[endpoint];
         const zoho = new Zoho();
         let allRecords = [];
         let page = 1;
         let moreRecords = true;
-    
+
         try {
             const accessToken = await zoho.getAccessToken();
-    
+
             while (moreRecords) {
                 let url = `https://www.zohoapis.eu/crm/v2/${modulo}`;
                 if (criteria) {
@@ -195,21 +144,21 @@ class presupuesto_notion_controller {
                     url += `?page=${page}`;
                 }
                 console.log("URL: ", url)
-    
+
                 const response = await axios.get(url, {
                     headers: {
                         Authorization: `Zoho-oauthtoken ${accessToken}`,
                     },
                 });
-    
+
                 const data = response.data?.data || [];
                 const info = response.data?.info || {};
-    
+
                 allRecords.push(...data);
                 moreRecords = info.more_records === true;
                 page++;
             }
-    
+
             if (allRecords.length > 0) {
                 return {
                     success: true,
@@ -230,7 +179,7 @@ class presupuesto_notion_controller {
                 error: error.message,
             };
         }
-    }    
+    }
 }
 
 export default presupuesto_notion_controller;

@@ -127,30 +127,21 @@ router.post('/subirExcelPreciosEscaparate', upload.single('archivoExcel'), async
     }
 });
 
-//recoge todos los clientes de zoho y los convierte a un json
-router.get('/todosClientesZoho', async (req, res) => {
-    try {
-        const controller = new presupuesto_notion_controller();
-        const resultado = await controller.recogerProveedoresZoho();
+// Enpoint GET de las OTS en NOTION
+router.get('/materialesPresupuesto', async (req, res) => {
+    const presupuestoNotionController = new presupuesto_notion_controller();
 
-        if (resultado.success) {
-            res.status(200).json({
-                mensaje: resultado.message,
-                proveedores: resultado.data,
-            });
-        } else {
-            res.status(400).json({
-                mensaje: resultado.message,
-                error: resultado.error || 'Error desconocido',
-            });
-        }
+    try {
+        const materiales = await presupuestoNotionController.getMaterialesMySql();
+        res.status(200).json(materiales);
     } catch (error) {
-        console.error('❌ Error en la ruta /subirExcelPreciosEscaparate:', error.message);
         res.status(500).json({
-            error: 'Error interno al subir y procesar el archivo o al conectar con Zoho.',
+            message: 'Error al obtener los materiales del presupuesto',
+            error: error.message
         });
     }
 });
+
 
 //recoge todos los puntos de venta de zoho y los convierte a un json
 router.get('/recogerModuloZoho', async (req, res) => {
@@ -161,12 +152,14 @@ router.get('/recogerModuloZoho', async (req, res) => {
             return res.status(400).json({ error: 'Falta el parámetro "modulo".' });
         }
 
-        if(req.query.criteria){
+        if (req.query.criteria) {
             console.log("Criteria: ", req.query.criteria)
             criteria = req.query.criteria; // Parsear el JSON
         }
-        console.log("Modulo: ", modulo);
-        console.log("Criteria: ", criteria);
+
+        //Pruebas para ver que devuelve el modulo y el criteria
+        //console.log("Modulo: ", modulo);
+        //console.log("Criteria: ", criteria);
 
         const controller = new presupuesto_notion_controller();
         const resultado = await controller.recogerModuloZoho(modulo, criteria); // ← Se lo pasas aquí
