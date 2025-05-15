@@ -1,6 +1,36 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Botón para añadir filas
+let materialesDisponibles = {}; //variable global de materiales con su precio
 
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarMateriales();
+
+    // Traer los materiales desde el backend para mostrar en el select
+    async function cargarMateriales() {
+        try {
+            const res = await fetch('/api/materiales'); // Poner ruta real del backend
+            const json = await res.json();
+
+            // Convertimos a diccionario: { nombre: precio }
+            materialesDisponibles = {};
+            json.data.forEach(material => {
+                materialesDisponibles[material.nombre] = material.precio;
+            });
+        } catch (error) {
+            console.warn('No se pudieron cargar los materiales del backend. Se usará una lista de prueba.');
+            materialesDisponibles = {
+                "Vinilo ácido": 12.5,
+                "Foam 5mm": 7.2,
+                "Metacrilato": 15.0,
+                "Vinilo ácido 2": 13.5,
+                "Foam 5mm 2": 7.5,
+                "Metacrilato 2": 17.0,
+                "Vinilo ácido 3": 14.5,
+                "Foam 5mm 3": 9.2,
+                "Metacrilato 3": 16.0
+            };
+        }
+    }
+
+    // Botón para añadir filas
     document.querySelectorAll('.add-row').forEach(button => {
         button.addEventListener('click', event => {
             const tableId = event.target.getAttribute('data-target');
@@ -26,6 +56,27 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="Total esc."></td>
         <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="Montaje"></td>
       `;
+
+            // --- Obtener el SELECT de materiales y el input de "Precio MP"
+            const selects = newRow.querySelectorAll('select');
+            const selectMaterial = selects[1]; // es el segundo select (Material)
+            const inputs = newRow.querySelectorAll('input');
+            const inputPrecioMP = inputs[3]; // es el 5º input (Precio Materia Prima)
+
+            // --- Poblar el SELECT de materiales
+            Object.entries(materialesDisponibles).forEach(([nombre, precio]) => {
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                selectMaterial.appendChild(option);
+            });
+
+            // --- Al seleccionar un material, mostrar su precio automáticamente
+            selectMaterial.addEventListener('change', () => {
+                const material = selectMaterial.value;
+                const precio = materialesDisponibles[material];
+                inputPrecioMP.value = precio !== undefined ? precio : '';
+            });
 
             tbody.appendChild(newRow);
 
@@ -127,21 +178,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.querySelectorAll('.default-file-input').forEach(input => {
-  input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const cell = input.closest('td');
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            const cell = input.closest('td');
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.textContent = 'Ver imagen';
-      link.className = 'block w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50 text-center text-gray-800 no-underline hover:text-black';
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.textContent = 'Ver imagen';
+            link.className = 'block w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50 text-center text-gray-800 no-underline hover:text-black';
 
-      cell.innerHTML = '';
-      cell.appendChild(link);
-    }
-  });
+            cell.innerHTML = '';
+            cell.appendChild(link);
+        }
+    });
 });
 
