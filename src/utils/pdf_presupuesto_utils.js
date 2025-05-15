@@ -12,6 +12,16 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+    const MIN_Y = 80;
+    const ensureSpace = (neededHeight = 20) => {
+        if (blockY - neededHeight < MIN_Y) {
+            page = addPageWithLayout();
+            blockY = height - 250; // O donde quieras reiniciar en la nueva página
+        }
+    };
+
+
+
     const colorRojo = rgb(0.686, 0.106, 0.165);
     const colorNegro = rgb(0, 0, 0);
     const colorGris = rgb(0.572, 0.572, 0.572);
@@ -24,13 +34,13 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         const { width, height } = page.getSize();
 
         const margenDerechoX = width - 40;
-        page.drawLine({ start: { x: margenDerechoX, y: 15 }, end: { x: margenDerechoX, y: height - 150 }, thickness: 2, color: colorRojo });
+        page.drawLine({ start: { x: margenDerechoX, y: 0 }, end: { x: margenDerechoX, y: height - 150 }, thickness: 2, color: colorRojo });
 
         const footerYH = 620;
         page.drawLine({ start: { x: 450, y: footerYH }, end: { x: width - 15, y: footerYH }, thickness: 1, color: colorRojo });
 
         const footerY = 40;
-        page.drawLine({ start: { x: 15, y: footerY }, end: { x: width - 15, y: footerY }, thickness: 2, color: colorRojo });
+        page.drawLine({ start: { x: 0, y: footerY }, end: { x: width, y: footerY }, thickness: 2, color: colorRojo });
 
         page.drawText("presupuesto", { x: 460, y: footerYH + 8, size: 10, font, color: colorNegro });
         page.drawText("nº." + datosOT.C_digo, { x: 470, y: footerYH - 12, size: 10, font, color: colorNegro });
@@ -107,7 +117,6 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         blockY = drawMultiline(`• ${item}`, 50, blockY);
     }
 
-    blockY -= 30;
     const drawTableCell = (text, x, y, width, height) => {
         page.drawRectangle({ x, y: y - height, width, height, borderColor: colorNegro, borderWidth: 1 });
         page.drawText(text, { x: x + 4, y: y - height + 4, size: 10, font });
@@ -117,6 +126,7 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     const colWidth = [250, 70, 100, 70];
     const rowHeight = 20;
 
+    blockY -= 30;
     drawTableCell('CONCEPTO', colX[0], blockY, colWidth[0], rowHeight);
     drawTableCell('Uds.', colX[1], blockY, colWidth[1], rowHeight);
     drawTableCell('Importe', colX[2], blockY, colWidth[2], rowHeight);
@@ -124,6 +134,7 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     blockY -= rowHeight;
 
     for (const pdv of datosOT.puntos_de_venta || []) {
+        ensureSpace(rowHeight);
         const nombre = pdv.PDV_relacionados?.name || 'Punto de venta';
         const totalEscaparates = (pdv.escaparates || []).length;
 
@@ -133,6 +144,104 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
         blockY -= rowHeight;
     }
+
+    drawTableCell('TOTAL REALIZACIÓN', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
+    drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+    blockY -= rowHeight + 20;
+
+    drawTableCell('CONCEPTO', colX[0], blockY, colWidth[0], rowHeight);
+    drawTableCell('Uds.', colX[1], blockY, colWidth[1], rowHeight);
+    drawTableCell('Importe', colX[2], blockY, colWidth[2], rowHeight);
+    drawTableCell('Total', colX[3], blockY, colWidth[3], rowHeight);
+    blockY -= rowHeight;
+
+    ensureSpace(rowHeight);
+    const agrupaciones = {};
+    for (const pdv of datosOT.puntos_de_venta || []) {
+        for (const linea of pdv.lineas || []) {
+            const tipo = linea.Tipo_de_trabajo || 'Montaje';
+
+            const dias = parseInt(linea.D_as_actuaci_n) || 0;
+            const horas = parseInt(linea.Horas_actuaci_n) || 0;
+            const minutos = parseInt(linea.Minutos_actuaci_n) || 0;
+
+            console.log('Dias:', dias + 'Horas:', horas + 'Minutos:', minutos);
+
+            const tiempo = (dias * 24 * 60) + (horas * 60) + minutos;
+
+            const clave = `${tipo} - ${tiempo} tiempo`;
+            agrupaciones[clave] = (agrupaciones[clave] || 0) + 1;
+        }
+    }
+
+
+    for (const [clave, cantidad] of Object.entries(agrupaciones)) {
+        ensureSpace(rowHeight);
+        drawTableCell(clave, colX[0], blockY, colWidth[0], rowHeight);
+        drawTableCell(`${cantidad}`, colX[1], blockY, colWidth[1], rowHeight);
+        drawTableCell('0 €', colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+        blockY -= rowHeight;
+    }
+
+    ensureSpace(rowHeight);
+
+    drawTableCell('TOTAL MONTAJES', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
+    drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+
+    ensureSpace(rowHeight + 60); // Por si hay que saltar de página
+
+    // Espacio antes de la tabla final
+    blockY -= 60;
+    ensureSpace(rowHeight);
+
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const rowFinalHeight = 30;
+    const centerText = (text, cellWidth, font, fontSize) =>
+        (cellWidth - font.widthOfTextAtSize(text, fontSize)) / 2;
+
+    // Fondo gris claro
+    const grayBg = rgb(0.9, 0.9, 0.9);
+
+    // Celdas: Precio Total
+    const precioTotalWidth = colWidth[0] + colWidth[1] + colWidth[2];
+    page.drawRectangle({
+        x: colX[0],
+        y: blockY - rowFinalHeight,
+        width: precioTotalWidth,
+        height: rowFinalHeight,
+        color: grayBg,
+        borderColor: colorNegro,
+        borderWidth: 1,
+    });
+    page.drawText('PRECIO TOTAL', {
+        x: colX[0] + centerText('PRECIO TOTAL', precioTotalWidth, boldFont, 9),
+        y: blockY - rowFinalHeight + 10,
+        size: 9,
+        font: boldFont,
+        color: colorNegro,
+    });
+
+    // Celdas: 0 €
+    page.drawRectangle({
+        x: colX[3],
+        y: blockY - rowFinalHeight,
+        width: colWidth[3],
+        height: rowFinalHeight,
+        color: grayBg,
+        borderColor: colorNegro,
+        borderWidth: 1,
+    });
+    page.drawText('0 €', {
+        x: colX[3] + centerText('0 €', colWidth[3], boldFont, 9),
+        y: blockY - rowFinalHeight + 10,
+        size: 9,
+        font: boldFont,
+        color: colorNegro,
+    });
+
+
+
 
     const pages = pdfDoc.getPages();
     const totalPages = pages.length;
