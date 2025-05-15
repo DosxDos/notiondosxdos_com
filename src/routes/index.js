@@ -115,16 +115,72 @@ router.post('/descargarPresupuesto', async (req, res) => {
     await controller.generarPDFdePresupuesto(req, res);
 });
 
-//convierte el excel de precios de escaparate un json y lo sube a la base de datos de mySQL
-router.post('/subirExcelPreciosEscaparate', upload.single('archivoExcel'), async (req, res) => {
-    try {
-        const controller = new presupuesto_notion_controller();
-        const resultado = await controller.subirPreciosEscaparate(req.file.path);
-        res.status(200).json({ mensaje: resultado });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al subir y procesar el archivo' });
-    }
-});
+    //convierte el excel de precios de escaparate un json y lo sube a la base de datos de mySQL
+    router.post('/subirExcelPreciosEscaparate', upload.single('archivoExcel'), async (req, res) => {
+        try {
+            const controller = new presupuesto_notion_controller();
+            const resultado = await controller.subirPreciosEscaparate(req.file.path);
+            res.status(200).json({ mensaje: resultado });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al subir y procesar el archivo' });
+        }
+    });
+
+    //recoge todos los clientes de zoho y los convierte a un json
+    router.get('/todosClientesZoho', async (req, res) => {
+        try {
+            const controller = new presupuesto_notion_controller();
+            const resultado = await controller.recogerProveedoresZoho();
+    
+            if (resultado.success) {
+                res.status(200).json({
+                    mensaje: resultado.message,
+                    proveedores: resultado.data,
+                });
+            } else {
+                res.status(400).json({
+                    mensaje: resultado.message,
+                    error: resultado.error || 'Error desconocido',
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error en la ruta /subirExcelPreciosEscaparate:', error.message);
+            res.status(500).json({
+                error: 'Error interno al subir y procesar el archivo o al conectar con Zoho.',
+            });
+        }
+    });    
+
+    //recoge todos los puntos de venta de zoho y los convierte a un json
+    router.get('/recogerModuloZoho', async (req, res) => {
+        try {
+            const modulo = req.query.modulo; // ← Aquí recoges el módulo desde el query param
+            if (!modulo) {
+                return res.status(400).json({ error: 'Falta el parámetro "modulo".' });
+            }
+    
+            const controller = new presupuesto_notion_controller();
+            const resultado = await controller.recogerModuloZoho(modulo); // ← Se lo pasas aquí
+    
+            if (resultado.success) {
+                res.status(200).json({
+                    mensaje: resultado.message,
+                    proveedores: resultado.data,
+                });
+            } else {
+                res.status(400).json({
+                    mensaje: resultado.message,
+                    error: resultado.error || 'Error desconocido',
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error en la ruta /recogerModuloZoho:', error.message);
+            res.status(500).json({
+                error: 'Error interno al conectar con Zoho.',
+            });
+        }
+    });
+        
 
 export default router;
