@@ -152,10 +152,9 @@ class presupuesto_notion_controller {
     }
 
     //Recogemos todos los puntos de venta de de Zoho y si hay mas de 200 vamos recorriendolos para devolverlos todos sin paginación
-    async recogerModuloZoho(endpoint) {
+    async recogerModuloZoho(endpoint, criteria = null) {
         const diccionarioCamposZoho = {
-            'clientes': 'Deals',
-            'lineasDeOt': 'Products',
+            'LineasDeOt': 'Products',
             'OTs': 'Deals',
             'Rutas': 'Rutas',
             'Montadores': 'Montadores',
@@ -176,53 +175,62 @@ class presupuesto_notion_controller {
             'MontadoresRutas': 'Montadores_Rutas',
             'OTPDV': 'OT_PDV',
             'Variables': 'Variables'
-
-        }
+        };
+    
         const modulo = diccionarioCamposZoho[endpoint];
         const zoho = new Zoho();
-        let allAccounts = [];
+        let allRecords = [];
         let page = 1;
         let moreRecords = true;
-
+    
         try {
             const accessToken = await zoho.getAccessToken();
-
+    
             while (moreRecords) {
-                const response = await axios.get(`https://www.zohoapis.eu/crm/v2/${modulo}?page=${page}`, {
+                let url = `https://www.zohoapis.eu/crm/v2/${modulo}`;
+                if (criteria) {
+                    const encodedCriteria = encodeURIComponent(criteria);
+                    url = `https://www.zohoapis.eu/crm/v2/${modulo}/search?criteria=${encodedCriteria}&page=${page}`;
+                } else {
+                    url += `?page=${page}`;
+                }
+                console.log("URL: ", url)
+    
+                const response = await axios.get(url, {
                     headers: {
                         Authorization: `Zoho-oauthtoken ${accessToken}`,
                     },
                 });
-
+    
                 const data = response.data?.data || [];
                 const info = response.data?.info || {};
-
-                allAccounts.push(...data);
+    
+                allRecords.push(...data);
                 moreRecords = info.more_records === true;
                 page++;
             }
-
-            if (allAccounts.length > 0) {
+    
+            if (allRecords.length > 0) {
                 return {
                     success: true,
-                    data: allAccounts,
-                    message: `Se han obtenido ${allAccounts.length} proveedores desde Zoho.`,
+                    data: allRecords,
+                    message: `Se han obtenido ${allRecords.length} registros desde Zoho.`,
                 };
             } else {
                 return {
                     success: false,
-                    message: 'No se encontraron registros en el módulo Accounts.',
+                    message: 'No se encontraron registros en el módulo especificado.',
                 };
             }
         } catch (error) {
-            console.error('❌ Error al recoger proveedores de Zoho:', error.message);
+            console.error('❌ Error al recoger registros de Zoho:', error.message);
             return {
                 success: false,
-                message: 'Error al recoger a los proveedores de Zoho.',
+                message: 'Error al recoger los registros desde Zoho.',
                 error: error.message,
             };
         }
-    }
+    }    
 }
 
 export default presupuesto_notion_controller;
