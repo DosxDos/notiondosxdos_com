@@ -8,6 +8,10 @@ import path from 'path';
 import fs from 'fs';
 import xlsx from 'xlsx';
 import mysql from 'mysql2/promise';
+import {generarTokenSinExpiracion} from '../security/authMiddleware.js';
+import { equal } from 'assert';
+import dotenv from 'dotenv';
+dotenv.config(); // Cargar variables de entorno
 
 
 const router = express.Router();
@@ -30,6 +34,24 @@ const storage = multer.diskStorage({
     },
 });
 const upload = multer({ storage });
+
+// Este sería el login de la API (Solo se utiliza para obtener un bearer token)
+router.post('/login', async (req, res) => {
+    //el email será cualquiera y la contraseña deberá ser la contraseña JWT Privada
+    const { email, password } = req.body;
+
+    try {
+        // Generar token
+        const token = await generarTokenSinExpiracion(req.body);
+
+        // Devolver el token
+        return res.status(200).json({ token });
+
+    } catch (error) {
+        console.error('Error en el login:', error);
+        return res.status(500).json({ message: 'Error al realizar el login', error: error.message });
+    }
+});
 
 /**
  * Estas son las peticiones de OTS de Notion

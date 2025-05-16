@@ -8,9 +8,12 @@ dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
 import respuesta from './utils/respuesta_util.js';
 import { exec } from 'child_process';
+import {verifyJWT} from './security/authMiddleware.js';
 
 app.use(express.json({ limit: '10mb' })); //Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
+
+app.use(verifyJWT); // 🔒 Esto se aplica a TODAS las rutas
 
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
