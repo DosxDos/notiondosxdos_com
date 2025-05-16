@@ -148,37 +148,39 @@ class MongoDB {
 
   async createIfNotExists(collectionName, C_digo, body) {
     try {
-      console.log('Verificando si el documento ya existe...');
-      await initializeMongoIds();
+        console.log('Verificando si el documento ya existe...');
+        
+        await this.initializeMongoIds(); // Se llama correctamente con `this`
+        const docIndex = await this.documentExists(collectionName); // Se llama correctamente con `this`
 
-      const docIndex = await documentExists(collectionName);
+        if (docIndex === -1) {
+            console.log('Documento no encontrado en mongoIds, creando uno nuevo...');
+            return await this.createNewDocument(collectionName, body); // Se llama correctamente con `this`
+        }
 
-      if (docIndex === -1) {
-        console.log('Documento no encontrado en mongoIds, creando uno nuevo...');
-        return await createNewDocument(collectionName, body);
-      }
+        let document = MongoDB.mongoIds[docIndex];
 
-      let document = MongoDB.mongoIds[docIndex];
+        let existingOT = await this.checkCodigoState(document, C_digo);
 
-      let existingOT = await this.checkCodigoState(document, C_digo);
+        while (MongoDB.peticion == false) {
+            await new Promise(resolve => setTimeout(resolve, 1));
+        }
 
-      while(peticion == false){
-        new Promise(resolve => setTimeout(resolve, 1));
-      }
-      if (existingOT) {
-        console.log('El objeto con C_digo ya existe, no se crea nada.');
-        return false;
-      }
+        if (existingOT) {
+            console.log('El objeto con C_digo ya existe, no se crea nada.');
+            return false;
+        }
 
-      console.log('C_digo no encontrado, agregando el nuevo objeto...');
-      document.data.push(...body.data);
-      return await updateDocument(document, collectionName);
+        console.log('C_digo no encontrado, agregando el nuevo objeto...');
+        document.data.push(...body.data);
+        return await this.updateDocument(document, collectionName); // Se llama correctamente con `this`
 
     } catch (error) {
-      console.error('Error al verificar y crear el documento:', error);
-      throw error;
+        console.error('Error al verificar y crear el documento:', error);
+        throw error;
     }
-  }
+}
+
 
 
   // Método para cerrar la conexión a MongoDB
