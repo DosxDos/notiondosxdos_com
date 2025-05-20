@@ -1,8 +1,10 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import MongoDB  from './DB/MongoDB.js';
+import MongoDB from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { engine } from 'express-handlebars';
+import axios from 'axios';
 const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
@@ -18,6 +20,28 @@ app.use(verifyJWT); // 🔒 Esto se aplica a TODAS las rutas
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Configurar Handlebars como motor de vistas
+app.engine('handlebars', engine({
+  partialsDir: path.join(__dirname, '../views/partials'),
+  helpers: {
+    json: (context) => JSON.stringify(context, null, 2),
+    range: function (from, to) {
+      const result = [];
+      for (let i = from; i <= to; i++) {
+        result.push(i);
+      }
+      return result;
+    },
+
+    concat: function (...args) {
+      args.pop(); // elimina options de Handlebars
+      return args.join('');
+    }
+  }
+}));
+app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, '../views'));
 
 // Crear una única instancia de MongoDB (Singleton)
 const mongo = new MongoDB();
@@ -37,6 +61,33 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+//Ruta donde se renderiza el presupuesto
+app.get('/presupuesto/:codigoOT', async (req, res) => {
+  try {
+    const codigoOT = req.params.codigoOT;
+
+    const apiRes = await axios.get(`http://localhost:${process.env.PORT}/api/presupuestoEscaparate/${codigoOT}`);
+    const result = apiRes.data;
+
+    if (!result.status) throw new Error(result.message);
+
+    const datos = result.data?.data?.[0];
+    if (!datos) {
+      return res.status(500).send('Error: no se encontraron datos de la OT');
+    }
+
+    res.render('presupuesto', {
+      layout: 'main',
+      ot: datos,
+      /* puntos_de_venta: datos.puntos_de_venta */
+    });
+
+  } catch (err) {
+    console.error('❌ ERROR en /presupuesto/:codigoOT:', err);
+    res.status(500).send('Error al cargar el presupuesto: ' + err.message);
+  }
 });
 
 // Ruta GET para verificar el webhook de github
