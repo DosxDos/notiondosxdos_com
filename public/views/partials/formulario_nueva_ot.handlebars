@@ -1,0 +1,32 @@
+<div id="formulario-nueva-ot" class="max-w-[1800px] mx-auto mt-12 font-sans px-6">
+  <!-- Título principal -->
+  <h2 class="text-3xl font-bold text-gray-800 mb-6">
+    Crear nueva OT para: <span id="nombre-cliente-formulario" class="text-red-700"></span>
+  </h2>
+
+  <!-- Sección: Selección de puntos de venta -->
+  <div class="mb-10">
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Puntos de Venta</h3>
+    <div class="flex flex-col gap-6" id="contenedor-pdvs">
+      <!-- Aquí se agregarán los PDVs manualmente con JS -->
+    </div>
+  </div>
+
+  <!-- Botón para añadir nuevo PDV manualmente -->
+  <div class="mb-12 flex justify-start">
+    <button
+      id="agregar-pdv-manual"
+      class="bg-white border border-red-700 text-red-700 px-4 py-2 rounded hover:bg-red-100 transition">
+      + Agregar PDV
+    </button>
+  </div>
+
+  <!-- Botón final para guardar o generar PDF -->
+  <div class="flex justify-center mt-12">
+    <button
+      id="generar-pdf"
+      class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded shadow mb-10">
+      Generar PDF de nueva OT
+    </button>
+  </div>
+</div>

@@ -9,7 +9,7 @@ dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET; // Usa variable de entorno en producción
 
 export const verifyJWT = (req, res, next) => {
-    const publicPaths = ['/api/login']; // puedes extender esto
+    const publicPaths = ['/api/login', '/login']; // puedes extender esto
 
     // Si es una ruta pública, no necesitamos el JWT
     if (publicPaths.includes(req.path)) {
@@ -29,7 +29,7 @@ export const verifyJWT = (req, res, next) => {
 
     // 3. Si no está ni en cabecera ni en el cuerpo, lo buscamos como parámetro en la URL
     if (!token && req.query.token) {
-        token = req.query.token.split(' ')[1];  // El token se pasa como parámetro en la URL
+        token = req.query.token;  // El token se pasa como parámetro en la URL
     }
 
     // Si no encontramos el token en ningún lugar
