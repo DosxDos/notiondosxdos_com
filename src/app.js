@@ -52,7 +52,7 @@ app.get('/login', (req, res) => {
 app.post('/api/login', router);
 
 // Aplicar verificación JWT para todas las rutas excepto las públicas
-app.use(verifyJWT);
+/* app.use(verifyJWT); */
 
 // Rutas frontend (vistas Handlebars)
 app.use('/', frontendRouter);

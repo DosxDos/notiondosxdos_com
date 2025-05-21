@@ -50,36 +50,28 @@ class PDVManager {
             <input type="text" placeholder="Nombre del punto de venta" 
                    class="mb-4 w-full p-2 border rounded text-sm">
 
-            <table id="tabla-pdv-${index}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
-                <thead class="bg-red-700 text-white text-sm text-center">
-                    <tr>
-                        <th class="p-3">Foto</th>
-                        <th class="p-3">Concepto</th>
-                        <th class="p-3">Alto</th>
-                        <th class="p-3">Ancho</th>
-                        <th class="p-3">Material</th>
-                        <th class="p-3">Precio/M.Prima</th>
-                        <th class="p-3">Precio Unitario</th>
-                        <th class="p-3">Unidades</th>
-                        <th class="p-3">Total</th>
-                        <th class="p-3">Escaparate</th>
-                        <th class="p-3">Total Escaparate</th>
-                        <th class="p-3">Montaje</th>
-                        <th class="p-3">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="9"></td>
-                        <td class="p-2 font-bold text-right">Total PDV:</td>
-                        <td class="p-2 text-center">
-                            <input type="number" class="w-24 p-1.5 border rounded text-right" readonly>
-                        </td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="overflow-x-auto">
+                <table id="tabla-pdv-${index}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
+                    <thead class="bg-red-700 text-white text-sm text-center">
+                        <tr>
+                            <th class="p-3 whitespace-nowrap">Foto</th>
+                            <th class="p-3 whitespace-nowrap">Isla</th>
+                            <th class="p-3 whitespace-nowrap">Concepto</th>
+                            <th class="p-3 whitespace-nowrap">Alto</th>
+                            <th class="p-3 whitespace-nowrap">Ancho</th>
+                            <th class="p-3 whitespace-nowrap">Material</th>
+                            <th class="p-3 whitespace-nowrap">Precio/M.Prima</th>
+                            <th class="p-3 whitespace-nowrap">Precio Unitario</th>
+                            <th class="p-3 whitespace-nowrap">Unidades</th>
+                            <th class="p-3 whitespace-nowrap">Total</th>
+                            <th class="p-3 whitespace-nowrap">Escaparate</th>
+                            <th class="p-3 whitespace-nowrap">Total Escaparate</th>
+                            <th class="p-3 whitespace-nowrap">Montaje</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 
             <div class="flex justify-end mt-2">
                 <button class="add-row bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 transition"
@@ -112,61 +104,78 @@ class PDVManager {
         const newRow = document.createElement('tr');
         newRow.classList.add('border-b', 'text-center');
 
-        newRow.innerHTML = this.generarTemplateFilaPDV();
+        // Verificar si es la primera fila
+        const isFirstRow = tbody.children.length === 0;
+        newRow.innerHTML = this.generarTemplateFilaPDV(isFirstRow);
         tbody.appendChild(newRow);
 
         // Inicializar eventos de la nueva fila
-        this.initializeRowEvents(newRow);
+        this.initializeRowEvents(newRow, isFirstRow);
     }
 
-    generarTemplateFilaPDV() {
+    generarTemplateFilaPDV(isFirstRow) {
+        const islaOptions = ['GC', 'FTV', 'HIERRO', 'LZT', 'TFE', 'GOMERA', 'PALMA']
+            .map(isla => `<option value="${isla}">${isla}</option>`)
+            .join('');
+
         return `
-            <td class="p-2">
-                <input type="file" class="file-input hidden">
-                <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                    Subir foto
-                </button>
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="file" class="file-input hidden">
+                    <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
+                        Subir foto
+                    </button>
+                ` : ''}
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <select class="isla w-full p-1.5 border rounded">
+                        <option value="">Seleccionar</option>
+                        ${islaOptions}
+                    </select>
+                ` : ''}
+            </td>
+            <td class="p-2 whitespace-nowrap">
                 <input type="text" class="w-full p-1.5 border rounded text-sm" placeholder="Concepto">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Alto">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <select class="material w-full p-1.5 border rounded">
                     <option value="">Seleccionar</option>
                     ${this.generarOpcionesMateriales()}
                 </select>
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded" readonly>
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="total w-20 p-1.5 border rounded" readonly>
             </td>
-            <td class="p-2">
-                <input type="text" class="escaparate w-24 p-1.5 border rounded">
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="text" class="escaparate w-24 p-1.5 border rounded">
+                ` : ''}
             </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded" readonly>
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded" readonly>
+                ` : ''}
             </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
-            </td>
-            <td class="p-2">
-                <button class="eliminar-fila text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                </button>
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
+                ` : ''}
             </td>
         `;
     }
@@ -177,13 +186,29 @@ class PDVManager {
             .join('');
     }
 
-    initializeRowEvents(row) {
-        // Manejo de foto
-        const uploadBtn = row.querySelector('.upload-btn');
-        const fileInput = row.querySelector('.file-input');
-        
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
+    initializeRowEvents(row, isFirstRow) {
+        if (isFirstRow) {
+            // Manejo de foto
+            const uploadBtn = row.querySelector('.upload-btn');
+            const fileInput = row.querySelector('.file-input');
+            
+            if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
+            }
+
+            // Manejo de escaparate y montaje
+            const escaparate = row.querySelector('.escaparate');
+            const totalEscaparate = row.querySelector('.total-escaparate');
+            const montaje = row.querySelector('.montaje');
+
+            if (escaparate && totalEscaparate) {
+                escaparate.addEventListener('input', () => {
+                    const valor = parseFloat(escaparate.value) || 0;
+                    totalEscaparate.value = valor.toFixed(2);
+                });
+            }
+        }
 
         // Manejo de cálculos
         const material = row.querySelector('.material');
@@ -194,10 +219,6 @@ class PDVManager {
             const input = row.querySelector(`.${className}`);
             input?.addEventListener('input', () => this.calcularTotales(row));
         });
-
-        // Botón eliminar fila
-        const deleteBtn = row.querySelector('.eliminar-fila');
-        deleteBtn?.addEventListener('click', () => row.remove());
     }
 
     handleFileUpload(event, button) {
@@ -241,12 +262,7 @@ class PDVManager {
     // Método para cargar los materiales disponibles
     async cargarMateriales() {
         try {
-            if (typeof fetchWithAuth !== 'function') {
-                console.error('fetchWithAuth no está definido. Asegúrate de que auth.js está cargado.');
-                return;
-            }
-
-            const response = await fetchWithAuth('/api/recogerModuloZoho?modulo=PreciosMaterialesYServ');
+            const response = await fetch('/api/recogerModuloZoho?modulo=PreciosMaterialesYServ');
             if (!response.ok) {
                 throw new Error(`Error al cargar materiales: ${response.status}`);
             }
@@ -277,16 +293,10 @@ class PDVManager {
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-        if (typeof requireAuth === 'function' && !requireAuth()) {
-            console.log('Usuario no autenticado');
-            return;
-        }
         window.pdvManager = new PDVManager();
         await window.pdvManager.cargarMateriales();
     });
 } else {
-    if (typeof requireAuth === 'function' && requireAuth()) {
-        window.pdvManager = new PDVManager();
-        window.pdvManager.cargarMateriales();
-    }
+    window.pdvManager = new PDVManager();
+    window.pdvManager.cargarMateriales();
 } 
