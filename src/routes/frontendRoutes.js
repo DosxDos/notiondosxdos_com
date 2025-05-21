@@ -8,6 +8,25 @@ frontendRouter.get('/login', (req, res) => {
   res.render('login', { layout: 'main' });
 });
 
+frontendRouter.get('/presupuestos', (req, res) => {
+  try {
+    res.render('dashboard', { 
+      layout: 'main',
+      title: 'Presupuestos'
+    });
+  } catch (error) {
+    console.error('Error al renderizar dashboard:', error);
+    res.status(500).send('Error al cargar la página: ' + error.message);
+  }
+});
+
+frontendRouter.get('/nueva-ot', (req, res) => {
+  res.render('nueva_ot', {
+    layout: 'main',
+    title: 'Nueva OT'
+  });
+});
+
 frontendRouter.get('/presupuesto/:codigoOT', async (req, res) => {
   try {
     const codigoOT = req.params.codigoOT;
@@ -19,7 +38,7 @@ frontendRouter.get('/presupuesto/:codigoOT', async (req, res) => {
     const datos = result.data?.data?.[0];
     if (!datos) return res.status(500).send('No se encontraron datos de la OT');
 
-    res.render('presupuesto', {
+    res.render('ot_existente', {
       layout: 'main',
       ot: datos,
     });

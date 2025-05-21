@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 
 // Configurar Handlebars como motor de vistas
 app.engine('handlebars', engine({
-  partialsDir: path.join(__dirname, 'public/views/partials'),
+  partialsDir: path.join(__dirname, '../public/views/partials'),
   helpers: {
     json: (context) => JSON.stringify(context, null, 2),
     range: function (from, to) {

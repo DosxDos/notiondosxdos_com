@@ -9,7 +9,7 @@ dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET; // Usa variable de entorno en producción
 
 export const verifyJWT = (req, res, next) => {
-    const publicPaths = ['/api/login', '/login']; // puedes extender esto
+    const publicPaths = ['/api/login', '/login', '/presupuestos', '/nueva-ot']; // puedes extender esto
 
     // Si es una ruta pública, no necesitamos el JWT
     if (publicPaths.includes(req.path)) {
