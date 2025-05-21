@@ -1,4 +1,45 @@
-<div class="h-full">
+{{!-- Cargar el script de autenticación primero --}}
+<script src="/js/auth.js"></script>
+
+<script>
+  // Verificar autenticación al cargar la página
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) {
+      return;
+    }
+    // Aquí va el resto del código de inicialización de la página
+  });
+</script>
+
+{{!-- Contenido de la página --}}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-6">Presupuestos</h1>
+  
+  {{!-- Buscador y cliente seleccionado --}}
   {{> buscador_cliente}}
-  {{> lista_ots}}
-</div> 
+  
+  {{!-- Filtros --}}
+  <div class="mb-6 flex items-center space-x-4">
+    <button id="ver-todas" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition">
+      Ver todas las OTs
+    </button>
+    <span id="filtro-activo" class="text-gray-600 hidden">
+      Mostrando OTs del cliente: <span id="nombre-cliente-filtro" class="font-medium"></span>
+    </span>
+  </div>
+
+  {{!-- Lista de OTs en grid --}}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="lista-ots">
+    {{!-- Las OTs se cargarán dinámicamente aquí --}}
+  </div>
+
+  {{!-- Botón Ver más --}}
+  <div class="text-center mt-8">
+    <button id="cargar-mas" class="bg-gray-100 text-gray-700 px-6 py-2 rounded hover:bg-gray-200 transition hidden">
+      Ver más
+    </button>
+  </div>
+</div>
+
+{{!-- Scripts adicionales --}}
+<script src="/js/presupuesto.js"></script> 

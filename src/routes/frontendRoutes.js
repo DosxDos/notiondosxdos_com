@@ -4,10 +4,7 @@ const frontendRouter = express.Router();
 import dotenv from 'dotenv';
 dotenv.config(); // Cargar variables de entorno
 
-frontendRouter.get('/login', (req, res) => {
-  res.render('login', { layout: 'main' });
-});
-
+// Rutas protegidas
 frontendRouter.get('/presupuestos', (req, res) => {
   try {
     res.render('dashboard', { 

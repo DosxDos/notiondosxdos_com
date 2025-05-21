@@ -13,16 +13,18 @@ import respuesta from './utils/respuesta_util.js';
 import { exec } from 'child_process';
 import {verifyJWT} from './security/authMiddleware.js';
 
-app.use(express.json({ limit: '10mb' })); //Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
-
-app.use(verifyJWT); // 🔒 Esto se aplica a TODAS las rutas
-
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configurar Handlebars como motor de vistas
+// Configuración de middlewares básicos
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Servir archivos estáticos desde la carpeta "public"
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Configurar Handlebars
 app.engine('handlebars', engine({
   partialsDir: path.join(__dirname, '../public/views/partials'),
   helpers: {
@@ -34,15 +36,29 @@ app.engine('handlebars', engine({
       }
       return result;
     },
-
     concat: function (...args) {
-      args.pop(); // elimina options de Handlebars
+      args.pop();
       return args.join('');
     }
   }
 }));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, '../public/views'));
+
+// Rutas públicas (login)
+app.get('/login', (req, res) => {
+  res.render('login', { layout: 'main' });
+});
+app.post('/api/login', router);
+
+// Aplicar verificación JWT para todas las rutas excepto las públicas
+app.use(verifyJWT);
+
+// Rutas frontend (vistas Handlebars)
+app.use('/', frontendRouter);
+
+// Rutas de la API
+app.use('/api', router);
 
 // Crear una única instancia de MongoDB (Singleton)
 const mongo = new MongoDB();
@@ -53,16 +69,7 @@ mongo.connect();
 app.use(express.json()); // Analizar cuerpos application/json
 app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application/x-www-form-urlencoded
 
-// Rutas frontend (vistas Handlebars)
-app.use('/', frontendRouter);
-
-// Usar rutas principales
-app.use('/api', router);
-
-// Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
+// Ruta principal para servir el archivo estático index de la carpeta "public"
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
