@@ -17,7 +17,7 @@ async function requireAuth() {
     }
 
     try {
-        const response = await fetch('/api/login/verify', {
+        const response = await fetch('/api/prueba', {
             headers: {
                 'Authorization': `Bearer ${getToken()}`
             }

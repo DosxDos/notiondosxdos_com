@@ -12,8 +12,7 @@
 </script>
 
 {{!-- Contenido de la página --}}
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6">Presupuestos</h1>
+<div class="container mx-auto px-4 py-20">
   
   {{!-- Buscador y cliente seleccionado --}}
   {{> buscador_cliente}}
@@ -23,6 +22,13 @@
     <button id="ver-todas" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition">
       Ver todas las OTs
     </button>
+    <!-- Botón crear nueva OT-->
+  <div>
+    <a href="/nueva-ot" 
+      class="bg-white text-red-700 border border-red-700 px-4 py-2 rounded hover:bg-red-100 transition">
+      + Crear nueva OT
+    </a>
+  </div>
     <span id="filtro-activo" class="text-gray-600 hidden">
       Mostrando OTs del cliente: <span id="nombre-cliente-filtro" class="font-medium"></span>
     </span>

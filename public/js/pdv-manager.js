@@ -5,9 +5,11 @@ class PDVManager {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.initializeEventListeners();
+                this.cargarMateriales();
             });
         } else {
             this.initializeEventListeners();
+            this.cargarMateriales();
         }
     }
 
@@ -54,6 +56,7 @@ class PDVManager {
                 <thead class="bg-red-700 text-white text-sm text-center">
                     <tr>
                         <th class="p-3">Foto</th>
+                        <th class="p-3">Isla</th>
                         <th class="p-3">Concepto</th>
                         <th class="p-3">Alto</th>
                         <th class="p-3">Ancho</th>
@@ -65,20 +68,9 @@ class PDVManager {
                         <th class="p-3">Escaparate</th>
                         <th class="p-3">Total Escaparate</th>
                         <th class="p-3">Montaje</th>
-                        <th class="p-3">Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="9"></td>
-                        <td class="p-2 font-bold text-right">Total PDV:</td>
-                        <td class="p-2 text-center">
-                            <input type="number" class="w-24 p-1.5 border rounded text-right" readonly>
-                        </td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tfoot>
             </table>
 
             <div class="flex justify-end mt-2">
@@ -109,23 +101,40 @@ class PDVManager {
         if (!table) return;
 
         const tbody = table.querySelector('tbody');
+        const esFilaInicial = tbody.children.length === 0;
         const newRow = document.createElement('tr');
         newRow.classList.add('border-b', 'text-center');
 
-        newRow.innerHTML = this.generarTemplateFilaPDV();
+        newRow.innerHTML = this.generarTemplateFilaPDV(esFilaInicial);
         tbody.appendChild(newRow);
 
         // Inicializar eventos de la nueva fila
-        this.initializeRowEvents(newRow);
+        this.initializeRowEvents(newRow, esFilaInicial);
     }
 
-    generarTemplateFilaPDV() {
+    generarTemplateFilaPDV(esFilaInicial = false) {
         return `
             <td class="p-2">
-                <input type="file" class="file-input hidden">
-                <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                    Subir foto
-                </button>
+                ${esFilaInicial ? `
+                    <input type="file" class="file-input hidden">
+                    <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
+                        Subir foto
+                    </button>
+                ` : ''}
+            </td>
+            <td class="p-2">
+                ${esFilaInicial ? `
+                    <select class="isla w-full p-1.5 border rounded">
+                        <option value="">Seleccionar</option>
+                        <option value="GC">GC</option>
+                        <option value="TFE">TFE</option>
+                        <option value="LZT">LZT</option>
+                        <option value="FTV">FTV</option>
+                        <option value="HIERRO">HIERRO</option>
+                        <option value="GOMERA">GOMERA</option>
+                        <option value="PALMA">PALMA</option>
+                    </select>
+                ` : ''}
             </td>
             <td class="p-2">
                 <input type="text" class="w-full p-1.5 border rounded text-sm" placeholder="Concepto">
@@ -155,18 +164,19 @@ class PDVManager {
                 <input type="number" step="0.01" class="total w-20 p-1.5 border rounded" readonly>
             </td>
             <td class="p-2">
-                <input type="text" class="escaparate w-24 p-1.5 border rounded">
+                ${esFilaInicial ? `
+                    <input type="text" class="escaparate w-24 p-1.5 border rounded">
+                ` : ''}
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded" readonly>
+                ${esFilaInicial ? `
+                    <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded" readonly>
+                ` : ''}
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
-            </td>
-            <td class="p-2">
-                <button class="eliminar-fila text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                </button>
+                ${esFilaInicial ? `
+                    <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
+                ` : ''}
             </td>
         `;
     }
@@ -177,27 +187,29 @@ class PDVManager {
             .join('');
     }
 
-    initializeRowEvents(row) {
-        // Manejo de foto
-        const uploadBtn = row.querySelector('.upload-btn');
-        const fileInput = row.querySelector('.file-input');
-        
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
+    initializeRowEvents(row, esFilaInicial) {
+        if (esFilaInicial) {
+            // Manejo de foto
+            const uploadBtn = row.querySelector('.upload-btn');
+            const fileInput = row.querySelector('.file-input');
+            
+            if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
+            }
+        }
 
         // Manejo de cálculos
         const material = row.querySelector('.material');
-        material.addEventListener('change', () => this.actualizarPrecioMP(row));
+        if (material) {
+            material.addEventListener('change', () => this.actualizarPrecioMP(row));
+        }
 
         // Eventos para cálculos automáticos
         ['dimension', 'precio-unitario', 'unidades'].forEach(className => {
             const input = row.querySelector(`.${className}`);
             input?.addEventListener('input', () => this.calcularTotales(row));
         });
-
-        // Botón eliminar fila
-        const deleteBtn = row.querySelector('.eliminar-fila');
-        deleteBtn?.addEventListener('click', () => row.remove());
     }
 
     handleFileUpload(event, button) {
@@ -209,10 +221,13 @@ class PDVManager {
     }
 
     actualizarPrecioMP(row) {
-        const material = row.querySelector('.material').value;
+        const material = row.querySelector('.material');
         const precioMP = row.querySelector('.precio-mp');
-        precioMP.value = this.materialesDisponibles[material] || '';
-        this.calcularTotales(row);
+        if (material && precioMP) {
+            const materialSeleccionado = material.value;
+            precioMP.value = this.materialesDisponibles[materialSeleccionado] || '';
+            this.calcularTotales(row);
+        }
     }
 
     calcularTotales(row) {
@@ -238,38 +253,44 @@ class PDVManager {
         }
     }
 
-    // Método para cargar los materiales disponibles
     async cargarMateriales() {
         try {
-            if (typeof fetchWithAuth !== 'function') {
-                console.error('fetchWithAuth no está definido. Asegúrate de que auth.js está cargado.');
-                return;
-            }
+            const res = await fetchWithAuth('/api/materialesPresupuesto');
+            if (!res.ok) throw new Error('Error al cargar materiales');
+            const data = await res.json();
+            console.log('Datos de materiales recibidos en PDVManager:', data);
 
-            const response = await fetchWithAuth('/api/recogerModuloZoho?modulo=PreciosMaterialesYServ');
-            if (!response.ok) {
-                throw new Error(`Error al cargar materiales: ${response.status}`);
-            }
-            const data = await response.json();
-            
-            if (!data || !data.proveedores) {
-                throw new Error('Formato de respuesta inválido');
-            }
-
+            // Actualizar materialesDisponibles
             this.materialesDisponibles = {};
-            data.proveedores.forEach(material => {
-                if (material.nombre && material.precio) {
-                    this.materialesDisponibles[material.nombre] = material.precio;
+            if (data.materiales && Array.isArray(data.materiales)) {
+                data.materiales.forEach(material => {
+                    if (material.nombre && material.importe !== undefined) {
+                        this.materialesDisponibles[material.nombre] = material.importe;
+                    }
+                });
+            }
+            console.log('Materiales disponibles en PDVManager:', this.materialesDisponibles);
+
+            // Actualizar todos los selectores de materiales existentes
+            document.querySelectorAll('.material').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Seleccionar</option>' +
+                    Object.entries(this.materialesDisponibles)
+                        .map(([nombre, precio]) => `<option value="${nombre}">${nombre}</option>`)
+                        .join('');
+                
+                // Restaurar el valor seleccionado si aún existe
+                if (currentValue && this.materialesDisponibles[currentValue]) {
+                    select.value = currentValue;
+                }
+
+                // Actualizar el precio si hay un material seleccionado
+                if (select.value) {
+                    this.actualizarPrecioMP(select.closest('tr'));
                 }
             });
         } catch (error) {
-            console.error('Error al cargar materiales:', error);
-            // Materiales de prueba por defecto
-            this.materialesDisponibles = {
-                "Vinilo ácido": 12.5,
-                "Foam 5mm": 7.2,
-                "Metacrilato": 15.0
-            };
+            console.error('Error al cargar materiales en PDVManager:', error);
         }
     }
 }

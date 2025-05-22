@@ -1,8 +1,19 @@
-let materialesDisponibles = {}; //variable global de materiales con su precio
-let todosLosClientes = [];
-let clienteSeleccionado = null;
-let currentPage = 1;
-let isLoading = false;
+// Variables globales
+if (typeof window.materialesDisponibles === 'undefined') {
+    window.materialesDisponibles = {};
+}
+if (typeof window.todosLosClientes === 'undefined') {
+    window.todosLosClientes = [];
+}
+if (typeof window.clienteSeleccionado === 'undefined') {
+    window.clienteSeleccionado = null;
+}
+if (typeof window.currentPage === 'undefined') {
+    window.currentPage = 1;
+}
+if (typeof window.isLoading === 'undefined') {
+    window.isLoading = false;
+}
 
 // Esperar a que auth.js esté cargado
 async function initializeApp() {
@@ -62,7 +73,7 @@ function initializeBuscador() {
             return;
         }
 
-        const filtrados = todosLosClientes.filter(c =>
+        const filtrados = window.todosLosClientes.filter(c =>
             c.Account_Name?.toLowerCase?.().includes(termino) ||
             c.Account_Name?.name?.toLowerCase?.().includes(termino)
         );
@@ -85,6 +96,13 @@ function initializeBuscador() {
                     nombreClienteSpan.textContent = li.textContent;
                 }
 
+                // Guardar información del cliente en sessionStorage
+                sessionStorage.setItem('clienteSeleccionado', JSON.stringify({
+                    id: cliente.id,
+                    nombre: li.textContent,
+                    Account_Name: cliente.Account_Name
+                }));
+
                 // Mostrar OTs del cliente seleccionado
                 currentPage = 1;
                 await cargarOTsDelCliente(cliente);
@@ -106,84 +124,16 @@ function initializeBuscador() {
 }
 
 async function cargarTodasLasOTs(append = false) {
-    if (isLoading) return;
-    isLoading = true;
-
     const listaOTs = document.getElementById('lista-ots');
     if (!listaOTs) return;
 
     try {
-        const criteria = `(modified_time:desc)&page=${currentPage}&per_page=10`;
-        const res = await fetchWithAuth(`/api/recogerModuloZoho?modulo=Deals&criteria=${encodeURIComponent(criteria)}`);
+        window.spinner.show();
+        
+        const res = await fetchWithAuth('/api/recogerModuloZoho?modulo=OTs');
         if (!res.ok) throw new Error('Error al cargar OTs');
         const data = await res.json();
-
-        if (!append) {
-            listaOTs.innerHTML = '';
-        }
-
-        if (data.proveedores && data.proveedores.length > 0) {
-            data.proveedores.forEach(ot => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200';
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <h2 class="text-lg font-semibold text-gray-900">${ot.Deal_Name || 'OT sin nombre'}</h2>
-                        <span class="px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">${ot.C_digo || 'Sin código'}</span>
-                    </div>
-                    <div class="space-y-2 text-sm text-gray-600">
-                        <p><span class="font-medium">Cliente:</span> ${ot.Account_Name?.name || 'Sin cliente'}</p>
-                        <p><span class="font-medium">Estado:</span> ${ot.Stage || 'Sin estado'}</p>
-                        <p><span class="font-medium">Firma:</span> ${ot.Firma || 'Sin firma'}</p>
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                        <a href="/presupuesto/${ot.C_digo}" class="text-red-700 hover:text-red-800 font-medium">
-                            Ver detalles →
-                        </a>
-                    </div>
-                `;
-                listaOTs.appendChild(card);
-            });
-
-            currentPage++;
-            
-            // Mostrar el botón "Ver más" si hay resultados
-            const botonCargarMas = document.getElementById('cargar-mas');
-            if (botonCargarMas) {
-                botonCargarMas.classList.remove('hidden');
-                if (data.proveedores.length < 10) {
-                    botonCargarMas.classList.add('hidden');
-                }
-            }
-        } else if (!append) {
-            listaOTs.innerHTML = '<div class="col-span-full text-center text-gray-500">No hay OTs disponibles</div>';
-            const botonCargarMas = document.getElementById('cargar-mas');
-            if (botonCargarMas) {
-                botonCargarMas.classList.add('hidden');
-            }
-        }
-    } catch (err) {
-        console.error('Error al cargar OTs:', err);
-        if (!append) {
-            listaOTs.innerHTML = '<div class="col-span-full text-center text-red-500">Error al cargar las OTs</div>';
-        }
-    } finally {
-        isLoading = false;
-    }
-}
-
-async function cargarOTsDelCliente(cliente) {
-    if (isLoading) return;
-    isLoading = true;
-
-    const listaOTs = document.getElementById('lista-ots');
-    if (!listaOTs) return;
-
-    try {
-        const criteria = `(Account_Name.id:equals:${cliente.id})&page=${currentPage}&per_page=10`;
-        const res = await fetchWithAuth(`/api/recogerModuloZoho?modulo=Deals&criteria=${encodeURIComponent(criteria)}`);
-        if (!res.ok) throw new Error('Error al cargar OTs');
-        const data = await res.json();
+        console.log('Datos de OTs recibidos:', data);
 
         listaOTs.innerHTML = '';
 
@@ -209,29 +159,62 @@ async function cargarOTsDelCliente(cliente) {
                 `;
                 listaOTs.appendChild(card);
             });
+        } else {
+            listaOTs.innerHTML = '<div class="col-span-full text-center text-gray-500">No hay OTs disponibles</div>';
+        }
+    } catch (err) {
+        console.error('Error al cargar OTs:', err);
+        listaOTs.innerHTML = '<div class="col-span-full text-center text-red-500">Error al cargar las OTs</div>';
+    } finally {
+        window.spinner.hide();
+    }
+}
 
-            currentPage++;
-            
-            // Mostrar el botón "Ver más" si hay resultados
-            const botonCargarMas = document.getElementById('cargar-mas');
-            if (botonCargarMas) {
-                botonCargarMas.classList.remove('hidden');
-                if (data.proveedores.length < 10) {
-                    botonCargarMas.classList.add('hidden');
-                }
-            }
+async function cargarOTsDelCliente(cliente) {
+    const listaOTs = document.getElementById('lista-ots');
+    if (!listaOTs) return;
+
+    try {
+        window.spinner.show();
+        
+        const criteria = `Account_Name.id:equals:${cliente.id}`;
+        const res = await fetchWithAuth(`/api/recogerModuloZoho?modulo=OTs&criteria=${encodeURIComponent(criteria)}`);
+        if (!res.ok) throw new Error('Error al cargar OTs');
+        const data = await res.json();
+        console.log('Datos de OTs del cliente recibidos:', data);
+
+        listaOTs.innerHTML = '';
+
+        if (data.proveedores && data.proveedores.length > 0) {
+            data.proveedores.forEach(ot => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">${ot.Deal_Name || 'OT sin nombre'}</h2>
+                        <span class="px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">${ot.C_digo || 'Sin código'}</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <p><span class="font-medium">Cliente:</span> ${ot.Account_Name?.name || 'Sin cliente'}</p>
+                        <p><span class="font-medium">Estado:</span> ${ot.Stage || 'Sin estado'}</p>
+                        <p><span class="font-medium">Firma:</span> ${ot.Firma || 'Sin firma'}</p>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <a href="/presupuesto/${ot.C_digo}" class="text-red-700 hover:text-red-800 font-medium">
+                            Ver detalles →
+                        </a>
+                    </div>
+                `;
+                listaOTs.appendChild(card);
+            });
         } else {
             listaOTs.innerHTML = '<div class="col-span-full text-center text-gray-500">Este cliente no tiene OTs registradas</div>';
-            const botonCargarMas = document.getElementById('cargar-mas');
-            if (botonCargarMas) {
-                botonCargarMas.classList.add('hidden');
-            }
         }
     } catch (err) {
         console.error('Error al cargar OTs del cliente:', err);
         listaOTs.innerHTML = '<div class="col-span-full text-center text-red-500">Error al cargar las OTs</div>';
     } finally {
-        isLoading = false;
+        window.spinner.hide();
     }
 }
 
@@ -248,35 +231,63 @@ async function cargarClientes() {
         const res = await fetchWithAuth('/api/recogerModuloZoho?modulo=Clientes');
         if (!res.ok) throw new Error('Error al cargar clientes');
         const json = await res.json();
-        todosLosClientes = json.proveedores || [];
+        window.todosLosClientes = json.proveedores || [];
     } catch (err) {
         console.error('Error al cargar clientes:', err);
-        todosLosClientes = [];
+        window.todosLosClientes = [];
     }
 }
 
 async function cargarMateriales() {
     try {
-        const res = await fetchWithAuth('/api/recogerModuloZoho?modulo=PreciosMaterialesYServ');
+        const res = await fetchWithAuth('/api/materialesPresupuesto');
         if (!res.ok) throw new Error('Error al cargar materiales');
-        const json = await res.json();
+        const data = await res.json();
+        console.log('Datos de materiales recibidos:', data);
 
         // Convertimos a diccionario: { nombre: precio }
-        materialesDisponibles = {};
-        if (json.proveedores) {
-            json.proveedores.forEach(material => {
-                if (material.nombre && material.precio) {
-                    materialesDisponibles[material.nombre] = material.precio;
+        window.materialesDisponibles = {};
+        if (data.materiales && Array.isArray(data.materiales)) {
+            data.materiales.forEach(material => {
+                if (material.nombre && material.importe !== undefined) {
+                    window.materialesDisponibles[material.nombre] = material.importe;
                 }
             });
         }
+        console.log('Materiales disponibles:', window.materialesDisponibles);
+
+        // Actualizar todos los selectores de materiales existentes
+        document.querySelectorAll('select[data-tipo="material"]').forEach(select => {
+            actualizarSelectorMateriales(select);
+        });
     } catch (error) {
-        console.warn('No se pudieron cargar los materiales del backend. Se usará una lista de prueba.');
-        materialesDisponibles = {
+        console.error('Error al cargar materiales:', error);
+        window.materialesDisponibles = {
             "Vinilo ácido": 12.5,
             "Foam 5mm": 7.2,
             "Metacrilato": 15.0
         };
+    }
+}
+
+function actualizarSelectorMateriales(select) {
+    // Guardar el valor seleccionado actualmente
+    const valorActual = select.value;
+    
+    // Limpiar opciones existentes
+    select.innerHTML = '<option value="">Seleccionar</option>';
+    
+    // Añadir nuevas opciones
+    Object.keys(window.materialesDisponibles).forEach(nombreMaterial => {
+        const option = document.createElement('option');
+        option.value = nombreMaterial;
+        option.textContent = nombreMaterial;
+        select.appendChild(option);
+    });
+    
+    // Restaurar el valor seleccionado si existía
+    if (valorActual && window.materialesDisponibles[valorActual]) {
+        select.value = valorActual;
     }
 }
 
@@ -396,48 +407,24 @@ function handleAddRow(event) {
         <td class="p-2"><select class="w-full p-1.5 border border-gray-300 rounded"><option value="">Seleccionar</option></select></td>
         <td class="p-2"><input type="number" placeholder="Alto" step="any" class="w-16 p-1.5 border rounded text-sm"></td>
         <td class="p-2"><input type="number" placeholder="Ancho" step="any" class="w-16 p-1.5 border rounded text-sm"></td>
-        <td class="p-2"><select class="w-full p-1.5 border border-gray-300 rounded"><option value="">Seleccionar</option></select></td>
-        <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="MP"></td>
+        <td class="p-2"><select class="w-full p-1.5 border border-gray-300 rounded" data-tipo="material"><option value="">Seleccionar</option></select></td>
+        <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="MP" readonly></td>
         <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="Unitario"></td>
         <td class="p-2"><input type="number" placeholder="Unidades" class="w-16 p-1.5 border rounded text-sm"></td>
         <td class="p-2"><input type="number" class="w-20 p-1.5 border rounded" placeholder="Total"></td>
     `;
 
-    // Poblar materiales
-    const selects = newRow.querySelectorAll('select');
-    const selectMaterial = selects[1];
-    const inputs = newRow.querySelectorAll('input');
-    const inputPrecioMP = inputs[3];
+    // Configurar el selector de materiales
+    const selectMaterial = newRow.querySelector('select[data-tipo="material"]');
+    const inputPrecioMP = newRow.querySelectorAll('input[type="number"]')[3]; // El cuarto input es el de Precio/M.Prima
 
-    Object.entries(materialesDisponibles).forEach(([nombre, precio]) => {
-        const option = document.createElement('option');
-        option.value = nombre;
-        option.textContent = nombre;
-        selectMaterial.appendChild(option);
-    });
+    actualizarSelectorMateriales(selectMaterial);
 
+    // Evento para actualizar el precio cuando se selecciona un material
     selectMaterial.addEventListener('change', () => {
         const material = selectMaterial.value;
-        const precio = materialesDisponibles[material];
+        const precio = window.materialesDisponibles[material];
         inputPrecioMP.value = precio !== undefined ? precio : '';
-    });
-
-    // Preview de imagen
-    const fileInput = newRow.querySelector('.file-input');
-    const cell = fileInput.closest('td');
-
-    fileInput.addEventListener('change', () => {
-        const file = fileInput.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            link.textContent = 'Ver imagen';
-            link.className = 'block w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50 text-center text-gray-800 no-underline hover:text-black';
-            cell.innerHTML = '';
-            cell.appendChild(link);
-        }
     });
 
     tbody.appendChild(newRow);

@@ -9,12 +9,26 @@ dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET; // Usa variable de entorno en producción
 
 export const verifyJWT = (req, res, next) => {
-    const publicPaths = ['/api/login', '/login', '/presupuestos', '/nueva-ot', '/presupuesto/:codigoOT']; // puedes extender esto
+    // Definir rutas públicas. Para rutas con parámetros, comprobamos el inicio.
+    const publicPathsExact = [
+        '/api/login',
+        '/login',
+        '/presupuestos',
+        '/nueva-ot'
+    ];
+    
+    const isPublicPath = publicPathsExact.includes(req.path) || req.path.startsWith('/presupuesto/');
+
+    console.log(`[verifyJWT] Solicitud a: ${req.method} ${req.path}`);
+    console.log(`[verifyJWT] ¿Es ruta pública? ${isPublicPath}`);
 
     // Si es una ruta pública, no necesitamos el JWT
-    if (publicPaths.includes(req.path)) {
+    if (isPublicPath) {
+        console.log(`[verifyJWT] Ruta pública, saltando verificación JWT.`);
         return next(); // Ruta pública, no requiere token
     }
+
+    console.log(`[verifyJWT] Ruta protegida, verificando token...`);
 
     // 1. Intentamos obtener el token de la cabecera (Authorization)
     let token = req.headers.authorization && req.headers.authorization.startsWith('Bearer ')
@@ -32,8 +46,11 @@ export const verifyJWT = (req, res, next) => {
         token = req.query.token;  // El token se pasa como parámetro en la URL
     }
 
+    console.log(`[verifyJWT] Token encontrado: ${token ? 'Sí' : 'No'}`);
+
     // Si no encontramos el token en ningún lugar
     if (!token) {
+        console.log(`[verifyJWT] Token no encontrado, enviando 401.`);
         return res.status(401).json({ message: 'Token no proporcionado o inválido' });
     }
 
@@ -41,8 +58,10 @@ export const verifyJWT = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;  // Guardamos los datos del usuario decodificados en req.user
+        console.log(`[verifyJWT] Token verificado con éxito.`);
         next();  // Continuamos con la siguiente función
     } catch (error) {
+        console.error(`[verifyJWT] Error verificando token: ${error.message}`);
         return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
     }
 };
