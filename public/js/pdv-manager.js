@@ -52,6 +52,7 @@ class PDVManager {
             <input type="text" placeholder="Nombre del punto de venta" 
                    class="mb-4 w-full p-2 border rounded text-sm">
 
+<<<<<<< HEAD
             <table id="tabla-pdv-${index}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
                 <thead class="bg-red-700 text-white text-sm text-center">
                     <tr>
@@ -72,6 +73,30 @@ class PDVManager {
                 </thead>
                 <tbody></tbody>
             </table>
+=======
+            <div class="overflow-x-auto">
+                <table id="tabla-pdv-${index}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
+                    <thead class="bg-red-700 text-white text-sm text-center">
+                        <tr>
+                            <th class="p-3 whitespace-nowrap">Foto</th>
+                            <th class="p-3 whitespace-nowrap">Isla</th>
+                            <th class="p-3 whitespace-nowrap">Concepto</th>
+                            <th class="p-3 whitespace-nowrap">Alto</th>
+                            <th class="p-3 whitespace-nowrap">Ancho</th>
+                            <th class="p-3 whitespace-nowrap">Material</th>
+                            <th class="p-3 whitespace-nowrap">Precio/M.Prima</th>
+                            <th class="p-3 whitespace-nowrap">Precio Unitario</th>
+                            <th class="p-3 whitespace-nowrap">Unidades</th>
+                            <th class="p-3 whitespace-nowrap">Total</th>
+                            <th class="p-3 whitespace-nowrap">Escaparate</th>
+                            <th class="p-3 whitespace-nowrap">Total Escaparate</th>
+                            <th class="p-3 whitespace-nowrap">Montaje</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
 
             <div class="flex justify-end mt-2">
                 <button class="add-row bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 transition"
@@ -105,6 +130,7 @@ class PDVManager {
         const newRow = document.createElement('tr');
         newRow.classList.add('border-b', 'text-center');
 
+<<<<<<< HEAD
         newRow.innerHTML = this.generarTemplateFilaPDV(esFilaInicial);
         tbody.appendChild(newRow);
 
@@ -116,11 +142,31 @@ class PDVManager {
         return `
             <td class="p-2">
                 ${esFilaInicial ? `
+=======
+        // Verificar si es la primera fila
+        const isFirstRow = tbody.children.length === 0;
+        newRow.innerHTML = this.generarTemplateFilaPDV(isFirstRow);
+        tbody.appendChild(newRow);
+
+        // Inicializar eventos de la nueva fila
+        this.initializeRowEvents(newRow, isFirstRow);
+    }
+
+    generarTemplateFilaPDV(isFirstRow) {
+        const islaOptions = ['GC', 'FTV', 'HIERRO', 'LZT', 'TFE', 'GOMERA', 'PALMA']
+            .map(isla => `<option value="${isla}">${isla}</option>`)
+            .join('');
+
+        return `
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
                     <input type="file" class="file-input hidden">
                     <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
                         Subir foto
                     </button>
                 ` : ''}
+<<<<<<< HEAD
             </td>
             <td class="p-2">
                 ${esFilaInicial ? `
@@ -135,34 +181,45 @@ class PDVManager {
                         <option value="PALMA">PALMA</option>
                     </select>
                 ` : ''}
+=======
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <select class="isla w-full p-1.5 border rounded">
+                        <option value="">Seleccionar</option>
+                        ${islaOptions}
+                    </select>
+                ` : ''}
+            </td>
+            <td class="p-2 whitespace-nowrap">
                 <input type="text" class="w-full p-1.5 border rounded text-sm" placeholder="Concepto">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Alto">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <select class="material w-full p-1.5 border rounded">
                     <option value="">Seleccionar</option>
                     ${this.generarOpcionesMateriales()}
                 </select>
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded" readonly>
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
             </td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">
                 <input type="number" step="0.01" class="total w-20 p-1.5 border rounded" readonly>
             </td>
+<<<<<<< HEAD
             <td class="p-2">
                 ${esFilaInicial ? `
                     <input type="text" class="escaparate w-24 p-1.5 border rounded">
@@ -175,6 +232,20 @@ class PDVManager {
             </td>
             <td class="p-2">
                 ${esFilaInicial ? `
+=======
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="text" class="escaparate w-24 p-1.5 border rounded">
+                ` : ''}
+            </td>
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+                    <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded" readonly>
+                ` : ''}
+            </td>
+            <td class="p-2 whitespace-nowrap">
+                ${isFirstRow ? `
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
                     <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
                 ` : ''}
             </td>
@@ -187,8 +258,13 @@ class PDVManager {
             .join('');
     }
 
+<<<<<<< HEAD
     initializeRowEvents(row, esFilaInicial) {
         if (esFilaInicial) {
+=======
+    initializeRowEvents(row, isFirstRow) {
+        if (isFirstRow) {
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
             // Manejo de foto
             const uploadBtn = row.querySelector('.upload-btn');
             const fileInput = row.querySelector('.file-input');
@@ -197,6 +273,21 @@ class PDVManager {
                 uploadBtn.addEventListener('click', () => fileInput.click());
                 fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
             }
+<<<<<<< HEAD
+=======
+
+            // Manejo de escaparate y montaje
+            const escaparate = row.querySelector('.escaparate');
+            const totalEscaparate = row.querySelector('.total-escaparate');
+            const montaje = row.querySelector('.montaje');
+
+            if (escaparate && totalEscaparate) {
+                escaparate.addEventListener('input', () => {
+                    const valor = parseFloat(escaparate.value) || 0;
+                    totalEscaparate.value = valor.toFixed(2);
+                });
+            }
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
         }
 
         // Manejo de cálculos
@@ -255,10 +346,22 @@ class PDVManager {
 
     async cargarMateriales() {
         try {
+<<<<<<< HEAD
             const res = await fetchWithAuth('/api/materialesPresupuesto');
             if (!res.ok) throw new Error('Error al cargar materiales');
             const data = await res.json();
             console.log('Datos de materiales recibidos en PDVManager:', data);
+=======
+            const response = await fetch('/api/recogerModuloZoho?modulo=PreciosMaterialesYServ');
+            if (!response.ok) {
+                throw new Error(`Error al cargar materiales: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            if (!data || !data.proveedores) {
+                throw new Error('Formato de respuesta inválido');
+            }
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
 
             // Actualizar materialesDisponibles
             this.materialesDisponibles = {};
@@ -298,16 +401,10 @@ class PDVManager {
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-        if (typeof requireAuth === 'function' && !requireAuth()) {
-            console.log('Usuario no autenticado');
-            return;
-        }
         window.pdvManager = new PDVManager();
         await window.pdvManager.cargarMateriales();
     });
 } else {
-    if (typeof requireAuth === 'function' && requireAuth()) {
-        window.pdvManager = new PDVManager();
-        window.pdvManager.cargarMateriales();
-    }
+    window.pdvManager = new PDVManager();
+    window.pdvManager.cargarMateriales();
 } 

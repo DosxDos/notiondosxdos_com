@@ -15,6 +15,27 @@ if (typeof window.isLoading === 'undefined') {
     window.isLoading = false;
 }
 
+// Función simple para hacer peticiones
+async function fetchData(url, options = {}) {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error('Error en la petición');
+    }
+    return response;
+}
+
+// Esperar a que el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
+
+// Verificar autenticación al cargar
+if (!isAuthenticated()) {
+    window.location.href = '/login';
+}
+
 // Esperar a que auth.js esté cargado
 async function initializeApp() {
     if (typeof requireAuth !== 'function') {
@@ -27,28 +48,11 @@ async function initializeApp() {
     try {
         await cargarMateriales();
         await cargarClientes();
-        await cargarTodasLasOTs(); // Cargar todas las OTs por defecto
         
         // Solo inicializar los elementos si estamos en la página correcta
         const inputBuscador = document.getElementById('buscador-cliente');
         if (inputBuscador) {
             initializeBuscador();
-        }
-
-        // Configurar el botón "Ver más"
-        const botonCargarMas = document.getElementById('cargar-mas');
-        if (botonCargarMas) {
-            botonCargarMas.addEventListener('click', cargarMasOTs);
-        }
-
-        // Configurar el botón "Ver todas"
-        const botonVerTodas = document.getElementById('ver-todas');
-        if (botonVerTodas) {
-            botonVerTodas.addEventListener('click', () => {
-                currentPage = 1;
-                cargarTodasLasOTs();
-                document.getElementById('filtro-activo').classList.add('hidden');
-            });
         }
     } catch (error) {
         console.error('Error en la inicialización:', error);
@@ -96,6 +100,7 @@ function initializeBuscador() {
                     nombreClienteSpan.textContent = li.textContent;
                 }
 
+<<<<<<< HEAD
                 // Guardar información del cliente en sessionStorage
                 sessionStorage.setItem('clienteSeleccionado', JSON.stringify({
                     id: cliente.id,
@@ -107,6 +112,8 @@ function initializeBuscador() {
                 currentPage = 1;
                 await cargarOTsDelCliente(cliente);
                 
+=======
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
                 // Actualizar el filtro activo
                 const filtroActivo = document.getElementById('filtro-activo');
                 const nombreClienteFiltro = document.getElementById('nombre-cliente-filtro');
@@ -123,6 +130,7 @@ function initializeBuscador() {
     });
 }
 
+<<<<<<< HEAD
 async function cargarTodasLasOTs(append = false) {
     const listaOTs = document.getElementById('lista-ots');
     if (!listaOTs) return;
@@ -235,11 +243,21 @@ async function cargarClientes() {
     } catch (err) {
         console.error('Error al cargar clientes:', err);
         window.todosLosClientes = [];
+=======
+async function cargarClientes() {
+    try {
+        const res = await fetchData('/api/recogerModuloZoho?modulo=Accounts');
+        const data = await res.json();
+        todosLosClientes = data.proveedores || [];
+    } catch (err) {
+        console.error('Error al cargar clientes:', err);
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
     }
 }
 
 async function cargarMateriales() {
     try {
+<<<<<<< HEAD
         const res = await fetchWithAuth('/api/materialesPresupuesto');
         if (!res.ok) throw new Error('Error al cargar materiales');
         const data = await res.json();
@@ -369,37 +387,44 @@ const views = {
     formularioNueva: document.getElementById('formulario-nueva-ot'),
 };
 
+=======
+        const res = await fetchData('/api/materialesPresupuesto');
+        const data = await res.json();
+        materialesDisponibles = data;
+    } catch (err) {
+        console.error('Error al cargar materiales:', err);
+    }
+}
+
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
 function ocultarTodasLasVistas() {
-    Object.values(views).forEach(view => view?.classList.add('hidden'));
+    document.querySelectorAll('.vista').forEach(vista => {
+        vista.classList.add('hidden');
+    });
 }
 
 function mostrarVista(nombre) {
     ocultarTodasLasVistas();
-    views[nombre]?.classList.remove('hidden');
+    const vista = document.getElementById(`vista-${nombre}`);
+    if (vista) {
+        vista.classList.remove('hidden');
+    }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initializeApp().catch(error => console.error('Error en la inicialización:', error));
-    });
-} else {
-    initializeApp().catch(error => console.error('Error en la inicialización:', error));
-}
-
-// Botón para añadir filas
 function inicializarBotonesAddRow() {
     document.querySelectorAll('.add-row').forEach(button => {
-        button.removeEventListener('click', handleAddRow); // evita múltiples bindings
         button.addEventListener('click', handleAddRow);
     });
 }
 
 function handleAddRow(event) {
-    const tableId = event.target.getAttribute('data-target');
+    const button = event.target;
+    const tableId = button.dataset.table;
     const table = document.getElementById(tableId);
     if (!table) return;
 
     const tbody = table.querySelector('tbody');
+<<<<<<< HEAD
     const newRow = document.createElement('tr');
     newRow.classList.add('border-b', 'text-center');
 
@@ -425,27 +450,21 @@ function handleAddRow(event) {
         const material = selectMaterial.value;
         const precio = window.materialesDisponibles[material];
         inputPrecioMP.value = precio !== undefined ? precio : '';
+=======
+    const newRow = tbody.rows[0].cloneNode(true);
+    
+    // Limpiar valores
+    newRow.querySelectorAll('input, select').forEach(input => {
+        if (input.type === 'number') {
+            input.value = '0';
+        } else if (input.type === 'text') {
+            input.value = '';
+        } else if (input.tagName === 'SELECT') {
+            input.selectedIndex = 0;
+        }
+>>>>>>> bcd6a41bece50b3fabbf1477829843c3f653401b
     });
 
     tbody.appendChild(newRow);
 }
-
-document.querySelectorAll('.default-file-input').forEach(input => {
-    input.addEventListener('change', () => {
-        const file = input.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            const cell = input.closest('td');
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            link.textContent = 'Ver imagen';
-            link.className = 'block w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50 text-center text-gray-800 no-underline hover:text-black';
-
-            cell.innerHTML = '';
-            cell.appendChild(link);
-        }
-    });
-});
 
