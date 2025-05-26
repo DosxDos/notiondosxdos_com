@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('token', data.token);
                 console.log('Token guardado:', data.token);
                 console.log('Navegando a /presupuestos con autenticación...');
-                await navigateWithAuth('/presupuestos');
+                
+                window.location.href = '/presupuestos';
             } else {
                 console.error('Error de login:', data);
                 errorMessage.textContent = data.message || 'Error al iniciar sesión';

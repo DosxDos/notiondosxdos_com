@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { engine } from 'express-handlebars';
 import axios from 'axios';
+import cookieParser from 'cookie-parser';
 const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
@@ -20,6 +21,7 @@ const __dirname = path.dirname(__filename);
 // Configuración de middlewares básicos
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser()); // Añadir middleware para manejar cookies
 
 // Servir archivos estáticos desde la carpeta "public"
 app.use(express.static(path.join(__dirname, '../public')));
@@ -50,6 +52,12 @@ app.get('/login', (req, res) => {
   res.render('login', { layout: 'main' });
 });
 app.post('/api/login', router);
+
+// Verificar la ruta y mostrar información de diagnóstico
+app.use((req, res, next) => {
+  console.log(`[Diagnóstico] Acceso a ruta: ${req.method} ${req.path}`);
+  next();
+});
 
 // Aplicar verificación JWT para todas las rutas excepto las públicas
 app.use(verifyJWT);

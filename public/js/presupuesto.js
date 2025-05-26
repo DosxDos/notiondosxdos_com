@@ -15,6 +15,20 @@ if (typeof window.isLoading === 'undefined') {
     window.isLoading = false;
 }
 
+// Verificar autenticación antes de inicializar
+document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof requireAuth === 'function' && !await requireAuth()) {
+        console.log('Usuario no autenticado');
+        return;
+    }
+    
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error('Error al inicializar la aplicación:', error);
+    }
+});
+
 // Esperar a que auth.js esté cargado
 async function initializeApp() {
     if (typeof requireAuth !== 'function') {
@@ -298,8 +312,9 @@ document.getElementById('generar-pdf')?.addEventListener('click', async () => {
         puntos_de_venta: []
     };
 
-    document.querySelectorAll('table').forEach((table, index) => {
-        const pdvName = document.querySelectorAll('h2')[index]?.textContent.replace('PDV: ', '').trim();
+    document.querySelectorAll('.tabla-pdv').forEach((pdvContainer, index) => {
+        const pdvName = pdvContainer.querySelector('.select-pdv')?.value || `PDV ${index + 1}`;
+        const table = pdvContainer.querySelector('table');
         const rows = table.querySelectorAll('tbody tr');
         const elementos = [];
 

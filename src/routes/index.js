@@ -44,6 +44,13 @@ router.post('/login', async (req, res) => {
         // Generar token
         const token = await generarTokenSinExpiracion(req.body);
 
+        // Guardar token en cookies para navegación segura
+        res.cookie('token', token, {
+            httpOnly: true,  // Solo accesible por el servidor
+            secure: process.env.NODE_ENV === 'production',  // Solo HTTPS en producción
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 días
+        });
+
         // Devolver el token
         return res.status(200).json({ token });
 

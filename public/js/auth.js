@@ -12,19 +12,31 @@ function getToken() {
 // Función requireAuth que usamos en otros archivos
 async function requireAuth() {
     if (!isAuthenticated()) {
+        console.log('No hay token, redirigiendo a /login');
         window.location.href = '/login';
         return false;
     }
 
     try {
+        // Verificar si el token es válido haciendo una petición a la API
         const response = await fetch('/api/prueba', {
             headers: {
                 'Authorization': `Bearer ${getToken()}`
             }
         });
-        return response.ok;
+        
+        if (!response.ok) {
+            console.log('Token inválido, redirigiendo a /login');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return false;
+        }
+        
+        return true;
     } catch (error) {
         console.error('Error verificando autenticación:', error);
+        localStorage.removeItem('token');
+        window.location.href = '/login';
         return false;
     }
 }
@@ -150,4 +162,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.removeItem('token');
         window.location.href = '/login';
     }
-}); 
+});
+
+// Lista de rutas protegidas
+const rutasProtegidas = [
+    '/presupuestos',
+    '/nueva-ot',
+    '/presupuesto'
+];
+
+// Verificar inmediatamente si la ruta actual requiere autenticación
+(async function() {
+    // No verificar en la página de login
+    if (window.location.pathname === '/login') {
+        return;
+    }
+    
+    // Comprobar si estamos en una ruta protegida
+    const rutaActual = window.location.pathname;
+    const esRutaProtegida = rutasProtegidas.some(ruta => 
+        rutaActual === ruta || rutaActual.startsWith(`${ruta}/`)
+    );
+    
+    if (esRutaProtegida) {
+        if (!isAuthenticated()) {
+            console.log('Acceso directo a ruta protegida sin autenticación');
+            window.location.href = '/login';
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/prueba', {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                console.log('Token inválido al acceder directamente a ruta protegida');
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        } catch (error) {
+            console.error('Error verificando token en ruta protegida:', error);
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    }
+})(); 

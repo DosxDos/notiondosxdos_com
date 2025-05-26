@@ -12,12 +12,10 @@ export const verifyJWT = (req, res, next) => {
     // Definir rutas públicas. Para rutas con parámetros, comprobamos el inicio.
     const publicPathsExact = [
         '/api/login',
-        '/login',
-        '/presupuestos',
-        '/nueva-ot'
+        '/login'
     ];
     
-    const isPublicPath = publicPathsExact.includes(req.path) || req.path.startsWith('/presupuesto/');
+    const isPublicPath = publicPathsExact.includes(req.path);
 
     console.log(`[verifyJWT] Solicitud a: ${req.method} ${req.path}`);
     console.log(`[verifyJWT] ¿Es ruta pública? ${isPublicPath}`);
@@ -46,23 +44,42 @@ export const verifyJWT = (req, res, next) => {
         token = req.query.token;  // El token se pasa como parámetro en la URL
     }
 
+    // 4. También buscamos en las cookies si existe
+    if (!token && req.cookies && req.cookies.token) {
+        token = req.cookies.token;
+    }
+
     console.log(`[verifyJWT] Token encontrado: ${token ? 'Sí' : 'No'}`);
 
     // Si no encontramos el token en ningún lugar
     if (!token) {
-        console.log(`[verifyJWT] Token no encontrado, enviando 401.`);
-        return res.status(401).json({ message: 'Token no proporcionado o inválido' });
+        console.log(`[verifyJWT] Token no encontrado, redirigiendo a login.`);
+        
+        // Si es una solicitud de API, enviar 401
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ message: 'Token no proporcionado o inválido' });
+        }
+        
+        // Si es una solicitud de página, redirigir a login
+        return res.redirect('/login');
     }
 
     // Verificamos el token
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;  // Guardamos los datos del usuario decodificados en req.user
-        console.log(`[verifyJWT] Token verificado con éxito.`);
+        console.log(`[verifyJWT] Token verificado con éxito para usuario: ${decoded.email}`);
         next();  // Continuamos con la siguiente función
     } catch (error) {
         console.error(`[verifyJWT] Error verificando token: ${error.message}`);
-        return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
+        
+        // Si es una solicitud de API, enviar 401
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
+        }
+        
+        // Si es una solicitud de página, redirigir a login
+        return res.redirect('/login');
     }
 };
 
