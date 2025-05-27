@@ -5,4 +5,6 @@ notiondosxdos.com-chain.pem
 notiondosxdos.com-crt.pem
 notiondosxdos.com-key.pem
 presupuesto_generado.pdf
+#Hay que descachear los archivos de pruebas
+src/tests
 uploads

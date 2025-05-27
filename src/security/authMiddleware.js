@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import {db} from '../DB/mysqlConnection.js';
-import bcrypt from 'bcrypt'; // o 'bcryptjs'
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 

@@ -8,7 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import xlsx from 'xlsx';
 import mysql from 'mysql2/promise';
-import {generarTokenSinExpiracion} from '../security/authMiddleware.js';
+import { generarTokenSinExpiracion } from '../security/authMiddleware.js';
 import { equal } from 'assert';
 import dotenv from 'dotenv';
 dotenv.config(); // Cargar variables de entorno
@@ -146,6 +146,18 @@ router.post('/subirExcelPreciosEscaparate', upload.single('archivoExcel'), async
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al subir y procesar el archivo' });
+    }
+});
+
+//convierte el excel de precios de escaparate un json y lo sube a la base de datos de mySQL
+router.post('/crear/presupuesto/ot', upload.single('archivoExcel'), async (req, res) => {
+    try {
+        const controller = new ots_notion_controller(req.body);
+        const resultado = await controller.crearOtEscaparate();
+        res.status(200).json({ mensaje: resultado });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al crear el presupuesto de la ot' });
     }
 });
 

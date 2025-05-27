@@ -1,30 +1,103 @@
 import { Client } from '@notionhq/client';
 import MongoDB from './../DB/MongoDB.js'; // Importamos la clase MongoDB
+import Notion from './../notion_api/Notion.js'; // Importamos la clase Notion
+import { mapearPresupuestosOT } from "./../mappers/ot.js";
+import { mapearPresupuestosPuntoDeVenta } from "./../mappers/puntos_de_venta.js";
+import { mapearPresupuestosMaterial } from "./../mappers/materiales.js";
+import { diccionarioCamposNotion } from "./../constantes/constantes.js";
 
 class ots_notion_service {
     constructor(body) {
         this.body = body;
 
-        // Verificar si la API_KEY está definida correctamente
         if (!process.env.API_KEY) {
             console.error("API_KEY no está definida en las variables de entorno");
             throw new Error("API_KEY no está definida");
         }
 
-        this.notion = new Client({
-            auth: process.env.API_KEY,
-        });
+        // IDs de las bases de datos de Notion por módulo
+        this.db = {
+            OT: process.env.PROYECTOS_NOTION,
+            PDV: process.env.PUNTOS_DE_VENTA_NOTION,
+            Material: process.env.MATERIALES_DE_ENMARQUE,
+            Presupuesto: process.env.PRESUPUESTOS_ESCAPARATES,
+        };
 
-        // Enlazar métodos para asegurar el contexto de `this`
-        this.getBody = this.getBody.bind(this);
+        this.notion = new Notion(this.db);
+
+        // Enlazar contexto si es necesario
         this.crearOt = this.crearOt.bind(this);
         this.putOt = this.putOt.bind(this);
-        this.deleteOt = this.deleteOt.bind(this); // Método para eliminar la OT
+        this.deleteOt = this.deleteOt.bind(this);
     }
 
-    getBody() {
-        return this.body;
+
+    // ✅ 1. Relacionar o crear OT
+    async siNoExisteOtCrearSinoRelacionar() {
+        console.log("OTs en Notion (test):");
+        if (!this.body?.data.data || !Array.isArray(this.body.data.data) || !this.body.data.data[0]) {
+            throw new Error("El cuerpo recibido no contiene datos válidos en 'body.data.data[0]'");
+        }
+
+
+        const otZoho = this.body.data.data[0];
+        const codigoOT = otZoho.C_digo;
+
+        const otId = await this.notion.buscarPorCampo("OT", "Nº", codigoOT);
+
+        if (otId) return otId;
+
+        console.log("Crear página:");
+        const datosMapeados = mapearPresupuestosOT(otZoho);
+        const nuevaOtId = await this.notion.crearPagina("OT", datosMapeados);
+
+        return nuevaOtId;
     }
+
+
+    // ✅ 2. Relacionar o crear Punto de Venta
+    async siNoExistePuntoDeVentaCrearSinoRelacionar(pdvData) {
+        console.log("Puntos de venta en Notion (test):");
+
+        const codigoPDV = "zcrm_"+pdvData.id;
+        console.log("Código PDV: ", codigoPDV);
+        if (!codigoPDV) return null;
+
+        const existente = await this.notion.buscarPorCampo("PDV", "crmId", codigoPDV);
+
+        if (existente) return existente;
+
+        console.log("Crear página PDV:");
+        const datosMapeados = mapearPresupuestosPuntoDeVenta(pdvData);
+
+        //Cuando se crea un punto de venta para visualizarlo en el testing
+        //console.log("Datos mapeados PDV:", datosMapeados);
+
+        return await this.notion.crearPagina("PDV", datosMapeados);
+    }
+
+    // ✅ 3. Relacionar o crear Material (escaparate)
+    async siNoExisteMaterialaCrearSinoRelacionar(materialData) {
+        const codigoEscaparate = materialData?.Material; //Sería el identificador del material que en este caso es el nombre del material
+        if (!codigoEscaparate) return null;
+
+        const existente = await this.notion.buscarPorCampo("Material", "Nombre material", codigoEscaparate);
+
+        console.log("Existente Material:", existente + "Material buscado: " + codigoEscaparate);
+
+        if (existente) return existente;
+
+        console.log("Crear página Material:");
+        const datosMapeados = mapearPresupuestosMaterial(materialData);
+
+        return await this.notion.crearPagina("Material", datosMapeados);
+    }
+
+    // ✅ 4. Crear Presupuesto - Escaparate
+    async crearPresupuestoEscaparate(presupuestoData) {
+        return await this.notion.crearPagina("Presupuesto", presupuestoData);
+    }
+
 
     crearOt() {
         const mongo = new MongoDB();
@@ -428,17 +501,17 @@ class ots_notion_service {
             ]
         };
     }
-        // Función para asegurar que "Departamentos_relacionados" esté en formato adecuado (array de objetos)
-        _formatearDepartamentos(departamentos) {
-            if (departamentos && Array.isArray(departamentos)) {
-                // Si ya es un array de strings, lo devolvemos tal cual
-                return departamentos;
-            } else if (departamentos && typeof departamentos === 'string') {
-                // Si es un string, lo convertimos en un array de strings
-                return departamentos.split(';').map(dep => dep.trim());  // Eliminamos espacios innecesarios
-            }
-            return [];  // Si no hay departamentos, devolvemos un array vacío
+    // Función para asegurar que "Departamentos_relacionados" esté en formato adecuado (array de objetos)
+    _formatearDepartamentos(departamentos) {
+        if (departamentos && Array.isArray(departamentos)) {
+            // Si ya es un array de strings, lo devolvemos tal cual
+            return departamentos;
+        } else if (departamentos && typeof departamentos === 'string') {
+            // Si es un string, lo convertimos en un array de strings
+            return departamentos.split(';').map(dep => dep.trim());  // Eliminamos espacios innecesarios
         }
+        return [];  // Si no hay departamentos, devolvemos un array vacío
+    }
 }
 
 export default ots_notion_service;
