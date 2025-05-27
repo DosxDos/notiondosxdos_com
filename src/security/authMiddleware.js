@@ -9,24 +9,12 @@ dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET; // Usa variable de entorno en producción
 
 export const verifyJWT = (req, res, next) => {
-    // Definir rutas públicas. Para rutas con parámetros, comprobamos el inicio.
-    const publicPathsExact = [
-        '/api/login',
-        '/login'
-    ];
-    
-    const isPublicPath = publicPathsExact.includes(req.path);
-
-    console.log(`[verifyJWT] Solicitud a: ${req.method} ${req.path}`);
-    console.log(`[verifyJWT] ¿Es ruta pública? ${isPublicPath}`);
+    const publicPaths = ['/api/login']; // puedes extender esto
 
     // Si es una ruta pública, no necesitamos el JWT
-    if (isPublicPath) {
-        console.log(`[verifyJWT] Ruta pública, saltando verificación JWT.`);
+    if (publicPaths.includes(req.path)) {
         return next(); // Ruta pública, no requiere token
     }
-
-    console.log(`[verifyJWT] Ruta protegida, verificando token...`);
 
     // 1. Intentamos obtener el token de la cabecera (Authorization)
     let token = req.headers.authorization && req.headers.authorization.startsWith('Bearer ')
@@ -41,45 +29,21 @@ export const verifyJWT = (req, res, next) => {
 
     // 3. Si no está ni en cabecera ni en el cuerpo, lo buscamos como parámetro en la URL
     if (!token && req.query.token) {
-        token = req.query.token;  // El token se pasa como parámetro en la URL
+        token = req.query.token.split(' ')[1];  // El token se pasa como parámetro en la URL
     }
-
-    // 4. También buscamos en las cookies si existe
-    if (!token && req.cookies && req.cookies.token) {
-        token = req.cookies.token;
-    }
-
-    console.log(`[verifyJWT] Token encontrado: ${token ? 'Sí' : 'No'}`);
 
     // Si no encontramos el token en ningún lugar
     if (!token) {
-        console.log(`[verifyJWT] Token no encontrado, redirigiendo a login.`);
-        
-        // Si es una solicitud de API, enviar 401
-        if (req.path.startsWith('/api/')) {
-            return res.status(401).json({ message: 'Token no proporcionado o inválido' });
-        }
-        
-        // Si es una solicitud de página, redirigir a login
-        return res.redirect('/login');
+        return res.status(401).json({ message: 'Token no proporcionado o inválido' });
     }
 
     // Verificamos el token
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;  // Guardamos los datos del usuario decodificados en req.user
-        console.log(`[verifyJWT] Token verificado con éxito para usuario: ${decoded.email}`);
         next();  // Continuamos con la siguiente función
     } catch (error) {
-        console.error(`[verifyJWT] Error verificando token: ${error.message}`);
-        
-        // Si es una solicitud de API, enviar 401
-        if (req.path.startsWith('/api/')) {
-            return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
-        }
-        
-        // Si es una solicitud de página, redirigir a login
-        return res.redirect('/login');
+        return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
     }
 };
 

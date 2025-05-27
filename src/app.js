@@ -47,10 +47,6 @@ app.engine('handlebars', engine({
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, '../public/views'));
 
-// Rutas públicas (login)
-app.get('/login', (req, res) => {
-  res.render('login', { layout: 'main' });
-});
 app.post('/api/login', router);
 
 // Verificar la ruta y mostrar información de diagnóstico

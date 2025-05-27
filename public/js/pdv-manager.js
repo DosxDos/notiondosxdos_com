@@ -31,6 +31,11 @@ class PDVManager {
 
     async cargarPuntosDeVentaCliente() {
         try {
+            // Mostrar spinner mientras se cargan los datos
+            if (window.spinner) {
+                window.spinner.show();
+            }
+            
             // Obtener el cliente seleccionado desde sessionStorage
             const clienteGuardado = sessionStorage.getItem('clienteSeleccionado');
             if (!clienteGuardado) {
@@ -39,98 +44,45 @@ class PDVManager {
                 document.querySelectorAll('.select-pdv').forEach(select => {
                     select.innerHTML = '<option value="">Seleccione un cliente primero</option>';
                 });
+                if (window.spinner) window.spinner.hide();
                 return;
             }
 
             const cliente = JSON.parse(clienteGuardado);
             if (!cliente || !cliente.id) {
                 console.log('Datos de cliente inválidos o sin ID');
+                if (window.spinner) window.spinner.hide();
                 return;
             }
-
-            console.log('Cargando puntos de venta para el cliente:', cliente);
             
-            // Mostrar indicador de carga
-            document.querySelectorAll('.select-pdv').forEach(select => {
-                select.innerHTML = '<option value="">Cargando puntos de venta...</option>';
-                select.disabled = true;
-            });
-            
-            // Intentamos cargar todos los puntos de venta
+            // Cargar todos los puntos de venta
             console.log('Cargando todos los puntos de venta...');
             try {
-                const allPdvResponse = await fetchWithAuth('/api/recogerModuloZoho?modulo=PuntosDeVenta');
+                const allPdvResponse = await fetch('/api/recogerModuloZoho?modulo=PuntosDeVenta');
                 if (allPdvResponse.ok) {
                     const allPdvData = await allPdvResponse.json();
                     console.log('Todos los puntos de venta disponibles:', allPdvData);
                     
-                    // Si hay puntos de venta, inspeccionamos sus propiedades
+                    // Si hay puntos de venta, los usamos directamente sin filtrar
                     if (allPdvData.proveedores && allPdvData.proveedores.length > 0) {
-                        // Inspeccionar el primer PDV para ver la estructura
-                        const samplePdv = allPdvData.proveedores[0];
-                        console.log('Estructura de ejemplo de un PDV:', JSON.stringify(samplePdv, null, 2));
-                        
-                        // Buscar puntos de venta por el ID del cliente
-                        // Exploramos diferentes propiedades y formatos
-                        this.puntosDeVentaCliente = allPdvData.proveedores.filter(pdv => {
-                            // Para depuración, si tiene Account_Name, lo examinamos
-                            if (pdv.Account_Name) {
-                                // Imprimir solo los primeros 5 para no saturar la consola
-                                if (this.puntosDeVentaCliente.length < 5) {
-                                    console.log('Account_Name en PDV:', pdv.Account_Name);
-                                }
-                            }
-                            
-                            // Verificar todas las posibles formas en que el cliente puede estar relacionado
-                            return (
-                                // Comparación directa con Account_Name como objeto
-                                (pdv.Account_Name && pdv.Account_Name.id == cliente.id) ||
-                                (pdv.Account_Name && pdv.Account_Name.ID == cliente.id) ||
-                                
-                                // Comparación con Account_Name como string 
-                                (pdv.Account_Name == cliente.id) ||
-                                
-                                // Comparación con propiedad Account_id
-                                (pdv.Account_id == cliente.id) ||
-                                (pdv.Account_ID == cliente.id) ||
-                                
-                                // Comparación con otras propiedades posibles
-                                (pdv.Cliente && pdv.Cliente.id == cliente.id) ||
-                                (pdv.Cliente == cliente.id) ||
-                                
-                                // Si el cliente tiene nombre, intentamos comparar por nombre
-                                (cliente.nombre && 
-                                 pdv.Account_Name && 
-                                 pdv.Account_Name.name && 
-                                 pdv.Account_Name.name.toLowerCase() == cliente.nombre.toLowerCase())
-                            );
+                        // Ordenar puntos de venta alfabéticamente por nombre
+                        const pdvsOrdenados = [...allPdvData.proveedores].sort((a, b) => {
+                            const nombreA = a.Name || a.name || '';
+                            const nombreB = b.Name || b.name || '';
+                            return nombreA.localeCompare(nombreB, 'es');
                         });
                         
-                        console.log(`Se filtraron ${this.puntosDeVentaCliente.length} puntos de venta para el cliente con ID: ${cliente.id}`);
+                        this.puntosDeVentaCliente = pdvsOrdenados;
                         
-                        // Si encontramos PDVs, actualizamos los selectores
-                        if (this.puntosDeVentaCliente.length > 0) {
-                            document.querySelectorAll('.select-pdv').forEach(select => {
-                                select.disabled = false;
-                                this.actualizarSelectorPDV(select);
-                            });
-                            return;
-                        }
+                        console.log(`Se cargaron ${this.puntosDeVentaCliente.length} puntos de venta ordenados alfabéticamente`);
                         
-                        // Si no encontramos PDVs con la lógica anterior, usaremos una alternativa
-                        // Creamos PDVs ficticios basados en el nombre del cliente para no dejar al usuario sin opciones
-                        console.log("No se encontraron PDVs para el cliente, creando opciones alternativas...");
-                        
-                        this.puntosDeVentaCliente = [
-                            { Name: `${cliente.nombre || 'Cliente'} - Tienda Principal` },
-                            { Name: `${cliente.nombre || 'Cliente'} - Sucursal 1` },
-                            { Name: `${cliente.nombre || 'Cliente'} - Sucursal 2` }
-                        ];
-                        
+                        // Actualizar los selectores con todos los PDVs
                         document.querySelectorAll('.select-pdv').forEach(select => {
                             select.disabled = false;
                             this.actualizarSelectorPDV(select);
                         });
+                        
+                        if (window.spinner) window.spinner.hide();
                         return;
                     }
                 }
@@ -138,7 +90,7 @@ class PDVManager {
                 console.warn('Error al cargar todos los puntos de venta:', e);
             }
             
-            // Si llegamos aquí, no pudimos cargar o filtrar los PDVs correctamente
+            // Si llegamos aquí, no pudimos cargar los PDVs correctamente
             console.log('No se pudieron cargar PDVs. Creando opciones predeterminadas...');
             
             // Crear opciones predeterminadas basadas en el nombre del cliente
@@ -154,7 +106,7 @@ class PDVManager {
             });
             
         } catch (error) {
-            console.error('Error al cargar puntos de venta del cliente:', error);
+            console.error('Error al cargar puntos de venta:', error);
             this.puntosDeVentaCliente = [];
             
             // Mostrar mensaje de error en los selectores
@@ -162,6 +114,11 @@ class PDVManager {
                 select.innerHTML = '<option value="">Error al cargar puntos de venta</option>';
                 select.disabled = false;
             });
+        } finally {
+            // Asegurarnos de ocultar el spinner en cualquier caso
+            if (window.spinner) {
+                window.spinner.hide();
+            }
         }
     }
 
@@ -173,30 +130,51 @@ class PDVManager {
         select.innerHTML = '<option value="">Seleccionar punto de venta</option>';
         
         // Añadir nuevas opciones
-        this.puntosDeVentaCliente.forEach(pdv => {
-            // Intentar obtener el nombre de diferentes propiedades posibles
-            let nombrePDV = 'PDV sin nombre';
-            
-            // Propiedades comunes para el nombre
-            const posiblesPropiedades = ['Name', 'name', 'Nombre', 'nombre', 'PDV_Name'];
-            
-            // Buscar la primera propiedad que exista y tenga valor
-            for (const prop of posiblesPropiedades) {
-                if (pdv[prop]) {
-                    nombrePDV = pdv[prop];
-                    break;
+        if (this.puntosDeVentaCliente && this.puntosDeVentaCliente.length > 0) {
+            // Los PDVs ya vienen ordenados de la función cargarPuntosDeVentaCliente
+            this.puntosDeVentaCliente.forEach(pdv => {
+                // Intentar obtener el nombre del PDV
+                let nombrePDV = 'PDV sin nombre';
+                
+                // Propiedades comunes para el nombre
+                const posiblesPropiedades = ['Name', 'name', 'Nombre', 'nombre', 'PDV_Name'];
+                
+                // Buscar la primera propiedad que exista y tenga valor
+                for (const prop of posiblesPropiedades) {
+                    if (pdv[prop]) {
+                        nombrePDV = pdv[prop];
+                        break;
+                    }
                 }
-            }
-            
-            // Asegurarse de que tenemos un valor único para cada PDV
-            const valorPDV = pdv.id || pdv.ID || nombrePDV;
-            
-            const option = document.createElement('option');
-            option.value = nombrePDV;
-            option.textContent = nombrePDV;
-            option.dataset.id = valorPDV; // Guardar el ID como atributo data para uso futuro
-            select.appendChild(option);
-        });
+                
+                // Intentar obtener el nombre del cliente asociado
+                let nombreCliente = '';
+                if (pdv.Account_Name) {
+                    if (typeof pdv.Account_Name === 'object' && pdv.Account_Name.name) {
+                        nombreCliente = pdv.Account_Name.name;
+                    } else if (typeof pdv.Account_Name === 'string') {
+                        nombreCliente = pdv.Account_Name;
+                    }
+                }
+                
+                // Asegurarse de que tenemos un valor único para cada PDV
+                const valorPDV = pdv.id || pdv.ID || nombrePDV;
+                
+                // Crear la opción mostrando PDV y cliente
+                const option = document.createElement('option');
+                option.value = nombrePDV;
+                
+                // Si tenemos nombre de cliente, mostrarlo junto al PDV
+                if (nombreCliente) {
+                    option.textContent = `${nombrePDV} (${nombreCliente})`;
+                } else {
+                    option.textContent = nombrePDV;
+                }
+                
+                option.dataset.id = valorPDV; // Guardar el ID como atributo data para uso futuro
+                select.appendChild(option);
+            });
+        }
         
         // Si no hay opciones aparte de la default, mostrar mensaje
         if (select.options.length <= 1) {
