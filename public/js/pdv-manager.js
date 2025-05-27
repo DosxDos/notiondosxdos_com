@@ -212,6 +212,16 @@ class PDVManager {
     }
 
     generarTemplatePDV(index) {
+        // Comprobar si tenemos datos de puntos de venta disponibles
+        const nombrePDV = this.obtenerNombrePDV(index);
+        
+        // Si tenemos un nombre de PDV, lo mostramos directamente
+        const pdvDisplay = nombrePDV ? 
+            `<div class="mb-4 w-full p-3 border rounded bg-gray-50 text-sm font-semibold">${nombrePDV}</div>` :
+            `<select class="select-pdv mb-4 w-full p-2 border rounded text-sm">
+                <option value="">Seleccionar punto de venta</option>
+            </select>`;
+            
         return `
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-semibold text-gray-800">PDV</h2>
@@ -219,9 +229,7 @@ class PDVManager {
                     <i class="fas fa-trash"></i> Eliminar PDV
                 </button>
             </div>
-            <select class="select-pdv mb-4 w-full p-2 border rounded text-sm">
-                <option value="">Seleccionar punto de venta</option>
-            </select>
+            ${pdvDisplay}
 
             <table id="tabla-pdv-${index}" class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-4">
                 <thead class="bg-red-700 text-white text-sm text-center">
@@ -253,6 +261,33 @@ class PDVManager {
                 </button>
             </div>
         `;
+    }
+    
+    obtenerNombrePDV(index) {
+        // Intentar obtener los datos del presupuesto desde el cargador
+        if (window.presupuestoLoader && window.presupuestoLoader.datosPresupuesto) {
+            const puntosDeVenta = window.presupuestoLoader.datosPresupuesto.puntos_de_venta;
+            if (puntosDeVenta && puntosDeVenta[index]) {
+                const pdv = puntosDeVenta[index];
+                
+                // Verificar si el nombre está dentro del objeto PDV_relacionados
+                if (pdv.PDV_relacionados && pdv.PDV_relacionados.name) {
+                    return pdv.PDV_relacionados.name;
+                }
+                
+                // Si no está en PDV_relacionados, intentamos buscar en otras propiedades
+                const nombresPosibles = ['Name', 'name', 'PDV_Name', 'Nombre'];
+                for (const prop of nombresPosibles) {
+                    if (pdv[prop]) {
+                        return pdv[prop];
+                    }
+                }
+                
+                // Si no encontramos un nombre específico, devolvemos un valor genérico
+                return `Punto de Venta ${index + 1}`;
+            }
+        }
+        return null; // Devolver null si no hay datos disponibles
     }
 
     initializePDVEvents(pdvDiv, index) {
@@ -471,6 +506,48 @@ class PDVManager {
             });
         } catch (error) {
             console.error('Error al cargar materiales en PDVManager:', error);
+        }
+    }
+
+    async cargarDatosPresupuesto() {
+        try {
+            // Obtener el código OT de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlPath = window.location.pathname;
+            const pathParts = urlPath.split('/');
+            const codigoOT = pathParts[pathParts.length - 1];
+            
+            // Obtener el token de la URL
+            const token = urlParams.get('token');
+            
+            if (!codigoOT || !token) {
+                console.error('Código OT o token no encontrados en la URL');
+                return;
+            }
+            
+            console.log('Obteniendo datos del presupuesto para OT:', codigoOT);
+            
+            // Hacer la llamada al endpoint
+            const response = await fetch(`/api/presupuestoEscaparate/${codigoOT}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error al obtener los datos del presupuesto: ${response.status}`);
+            }
+            
+            const datos = await response.json();
+            console.log('Datos del presupuesto obtenidos:', datos);
+            
+            // Aquí puedes procesar los datos recibidos
+            // Por ahora solo los mostramos en la consola
+            
+        } catch (error) {
+            console.error('Error al cargar datos del presupuesto:', error);
         }
     }
 }
