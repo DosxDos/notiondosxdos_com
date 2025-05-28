@@ -1,18 +1,19 @@
-/* class PDVManager {
+/**
+ * Clase para gestionar las tablas de presupuestos de PDVs y escaparates
+ */
+class PresupuestosTabla {
     constructor() {
         this.materialesDisponibles = {};
-        this.puntosDeVentaCliente = [];
-        // Esperamos a que el DOM esté listo antes de inicializar
+
+        // Inicializar cuando el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', async () => {
                 await this.initializeEventListeners();
                 await this.cargarMateriales();
-                await this.cargarPuntosDeVentaCliente();
             });
         } else {
             this.initializeEventListeners();
             this.cargarMateriales();
-            this.cargarPuntosDeVentaCliente();
         }
     }
 
@@ -24,169 +25,6 @@
                 e.preventDefault();
                 this.agregarNuevoPDV();
             });
-        } else {
-            console.error('No se encontró el botón agregar-pdv-manual');
-        }
-    }
-
-    async cargarPuntosDeVentaCliente() {
-        try {
-            // Mostrar spinner mientras se cargan los datos
-            if (window.spinner) {
-                window.spinner.show();
-            }
-            
-            // Obtener el cliente seleccionado desde sessionStorage
-            const clienteGuardado = sessionStorage.getItem('clienteSeleccionado');
-            if (!clienteGuardado) {
-                console.log('No hay cliente seleccionado');
-                // Mostrar un mensaje en todos los selectores
-                document.querySelectorAll('.select-pdv').forEach(select => {
-                    select.innerHTML = '<option value="">Seleccione un cliente primero</option>';
-                });
-                if (window.spinner) window.spinner.hide();
-                return;
-            }
-
-            const cliente = JSON.parse(clienteGuardado);
-            if (!cliente || !cliente.id) {
-                console.log('Datos de cliente inválidos o sin ID');
-                if (window.spinner) window.spinner.hide();
-                return;
-            }
-            
-            // Cargar todos los puntos de venta
-            console.log('Cargando todos los puntos de venta...');
-            try {
-                const allPdvResponse = await fetch('/api/recogerModuloZoho?modulo=PuntosDeVenta');
-                if (allPdvResponse.ok) {
-                    const allPdvData = await allPdvResponse.json();
-                    console.log('Todos los puntos de venta disponibles:', allPdvData);
-                    
-                    // Si hay puntos de venta, los usamos directamente sin filtrar
-                    if (allPdvData.proveedores && allPdvData.proveedores.length > 0) {
-                        // Ordenar puntos de venta alfabéticamente por nombre
-                        const pdvsOrdenados = [...allPdvData.proveedores].sort((a, b) => {
-                            const nombreA = a.Name || a.name || '';
-                            const nombreB = b.Name || b.name || '';
-                            return nombreA.localeCompare(nombreB, 'es');
-                        });
-                        
-                        this.puntosDeVentaCliente = pdvsOrdenados;
-                        
-                        console.log(`Se cargaron ${this.puntosDeVentaCliente.length} puntos de venta ordenados alfabéticamente`);
-                        
-                        // Actualizar los selectores con todos los PDVs
-                        document.querySelectorAll('.select-pdv').forEach(select => {
-                            select.disabled = false;
-                            this.actualizarSelectorPDV(select);
-                        });
-                        
-                        if (window.spinner) window.spinner.hide();
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn('Error al cargar todos los puntos de venta:', e);
-            }
-            
-            // Si llegamos aquí, no pudimos cargar los PDVs correctamente
-            console.log('No se pudieron cargar PDVs. Creando opciones predeterminadas...');
-            
-            // Crear opciones predeterminadas basadas en el nombre del cliente
-            this.puntosDeVentaCliente = [
-                { Name: `${cliente.nombre || 'Cliente'} - Tienda Principal` },
-                { Name: `${cliente.nombre || 'Cliente'} - Sucursal 1` },
-                { Name: `${cliente.nombre || 'Cliente'} - Sucursal 2` }
-            ];
-            
-            document.querySelectorAll('.select-pdv').forEach(select => {
-                select.disabled = false;
-                this.actualizarSelectorPDV(select);
-            });
-            
-        } catch (error) {
-            console.error('Error al cargar puntos de venta:', error);
-            this.puntosDeVentaCliente = [];
-            
-            // Mostrar mensaje de error en los selectores
-            document.querySelectorAll('.select-pdv').forEach(select => {
-                select.innerHTML = '<option value="">Error al cargar puntos de venta</option>';
-                select.disabled = false;
-            });
-        } finally {
-            // Asegurarnos de ocultar el spinner en cualquier caso
-            if (window.spinner) {
-                window.spinner.hide();
-            }
-        }
-    }
-
-    actualizarSelectorPDV(select) {
-        // Guardar el valor seleccionado actualmente
-        const valorActual = select.value;
-        
-        // Limpiar opciones existentes
-        select.innerHTML = '<option value="">Seleccionar punto de venta</option>';
-        
-        // Añadir nuevas opciones
-        if (this.puntosDeVentaCliente && this.puntosDeVentaCliente.length > 0) {
-            // Los PDVs ya vienen ordenados de la función cargarPuntosDeVentaCliente
-            this.puntosDeVentaCliente.forEach(pdv => {
-                // Intentar obtener el nombre del PDV
-                let nombrePDV = 'PDV sin nombre';
-                
-                // Propiedades comunes para el nombre
-                const posiblesPropiedades = ['Name', 'name', 'Nombre', 'nombre', 'PDV_Name'];
-                
-                // Buscar la primera propiedad que exista y tenga valor
-                for (const prop of posiblesPropiedades) {
-                    if (pdv[prop]) {
-                        nombrePDV = pdv[prop];
-                        break;
-                    }
-                }
-                
-                // Intentar obtener el nombre del cliente asociado
-                let nombreCliente = '';
-                if (pdv.Account_Name) {
-                    if (typeof pdv.Account_Name === 'object' && pdv.Account_Name.name) {
-                        nombreCliente = pdv.Account_Name.name;
-                    } else if (typeof pdv.Account_Name === 'string') {
-                        nombreCliente = pdv.Account_Name;
-                    }
-                }
-                
-                // Asegurarse de que tenemos un valor único para cada PDV
-                const valorPDV = pdv.id || pdv.ID || nombrePDV;
-                
-                // Crear la opción mostrando PDV y cliente
-                const option = document.createElement('option');
-                option.value = nombrePDV;
-                
-                // Si tenemos nombre de cliente, mostrarlo junto al PDV
-                if (nombreCliente) {
-                    option.textContent = `${nombrePDV} (${nombreCliente})`;
-                } else {
-                    option.textContent = nombrePDV;
-                }
-                
-                option.dataset.id = valorPDV; // Guardar el ID como atributo data para uso futuro
-                select.appendChild(option);
-            });
-        }
-        
-        // Si no hay opciones aparte de la default, mostrar mensaje
-        if (select.options.length <= 1) {
-            select.innerHTML = '<option value="">No hay puntos de venta disponibles</option>';
-        }
-        
-        // Restaurar el valor seleccionado si existía
-        if (valorActual) {
-            const opcionExistente = Array.from(select.options).find(opt => opt.value === valorActual);
-            if (opcionExistente) {
-                select.value = valorActual;
-            }
         }
     }
 
@@ -203,12 +41,6 @@
 
         // Inicializar eventos para el nuevo PDV
         this.initializePDVEvents(pdvDiv, index);
-        
-        // Actualizar el selector de PDV
-        const selectPDV = pdvDiv.querySelector('.select-pdv');
-        if (selectPDV) {
-            this.actualizarSelectorPDV(selectPDV);
-        }
     }
 
     generarTemplatePDV(index) {
@@ -218,9 +50,7 @@
         // Si tenemos un nombre de PDV, lo mostramos directamente
         const pdvDisplay = nombrePDV ? 
             `<div class="mb-4 w-full p-3 border rounded bg-gray-50 text-sm font-semibold">${nombrePDV}</div>` :
-            `<select class="select-pdv mb-4 w-full p-2 border rounded text-sm">
-                <option value="">Seleccionar punto de venta</option>
-            </select>`;
+            `<div class="mb-4 w-full p-3 border rounded bg-gray-50 text-sm font-semibold">Punto de Venta ${index + 1}</div>`;
             
         return `
             <div class="flex justify-between items-center mb-4">
@@ -249,6 +79,7 @@
                         <th class="p-3">Total Escaparate</th>
                         <th class="p-3">Montaje</th>
                         <th class="p-3">OBS</th>
+                        <th class="p-3">Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -262,7 +93,7 @@
             </div>
         `;
     }
-    
+
     obtenerNombrePDV(index) {
         // Intentar obtener los datos del presupuesto desde el cargador
         if (window.presupuestoLoader && window.presupuestoLoader.datosPresupuesto) {
@@ -391,8 +222,14 @@
             </td>
             <td class="p-2">
                 ${esFilaInicial ? `
-                    <input type="text" step="0.01" class="obs w-20 p-1.5 border rounded">
+                    <input type="text" class="obs w-20 p-1.5 border rounded">
                 ` : ''}
+            </td>
+            <td class="p-2">
+                <button class="eliminar-fila text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
         `;
     }
 
@@ -425,6 +262,19 @@
             const input = row.querySelector(`.${className}`);
             input?.addEventListener('input', () => this.calcularTotales(row));
         });
+        
+        // Botón para eliminar fila
+        const eliminarBtn = row.querySelector('.eliminar-fila');
+        if (eliminarBtn) {
+            eliminarBtn.addEventListener('click', () => {
+                const tbody = row.parentElement;
+                row.remove();
+                // Recalcular totales de la tabla
+                if (tbody && tbody.closest('table')) {
+                    this.actualizarTotalPDV(tbody.closest('table'));
+                }
+            });
+        }
     }
 
     handleFileUpload(event, button) {
@@ -458,6 +308,8 @@
     }
 
     actualizarTotalPDV(table) {
+        if (!table) return;
+        
         const totales = Array.from(table.querySelectorAll('.total'))
             .map(input => parseFloat(input.value) || 0);
         
@@ -470,10 +322,22 @@
 
     async cargarMateriales() {
         try {
-            const res = await fetchWithAuth('/api/materialesPresupuesto');
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (!token) {
+                console.error('Token no encontrado en la URL');
+                return;
+            }
+            
+            const res = await fetch('/api/materialesPresupuesto', {
+                headers: {
+                    'Authorization': token
+                }
+            });
+            
             if (!res.ok) throw new Error('Error al cargar materiales');
             const data = await res.json();
-            console.log('Datos de materiales recibidos en PDVManager:', data);
 
             // Actualizar materialesDisponibles
             this.materialesDisponibles = {};
@@ -484,7 +348,6 @@
                     }
                 });
             }
-            console.log('Materiales disponibles en PDVManager:', this.materialesDisponibles);
 
             // Actualizar todos los selectores de materiales existentes
             document.querySelectorAll('.material').forEach(select => {
@@ -505,66 +368,16 @@
                 }
             });
         } catch (error) {
-            console.error('Error al cargar materiales en PDVManager:', error);
-        }
-    }
-
-    async cargarDatosPresupuesto() {
-        try {
-            // Obtener el código OT de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlPath = window.location.pathname;
-            const pathParts = urlPath.split('/');
-            const codigoOT = pathParts[pathParts.length - 1];
-            
-            // Obtener el token de la URL
-            const token = urlParams.get('token');
-            
-            if (!codigoOT || !token) {
-                console.error('Código OT o token no encontrados en la URL');
-                return;
-            }
-            
-            console.log('Obteniendo datos del presupuesto para OT:', codigoOT);
-            
-            // Hacer la llamada al endpoint
-            const response = await fetch(`/api/presupuestoEscaparate/${codigoOT}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Error al obtener los datos del presupuesto: ${response.status}`);
-            }
-            
-            const datos = await response.json();
-            console.log('Datos del presupuesto obtenidos:', datos);
-            
-            // Aquí puedes procesar los datos recibidos
-            // Por ahora solo los mostramos en la consola
-            
-        } catch (error) {
-            console.error('Error al cargar datos del presupuesto:', error);
+            console.error('Error al cargar materiales:', error);
         }
     }
 }
 
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        if (typeof requireAuth === 'function' && !requireAuth()) {
-            console.log('Usuario no autenticado');
-            return;
-        }
-        window.pdvManager = new PDVManager();
-        await window.pdvManager.cargarMateriales();
+    document.addEventListener('DOMContentLoaded', () => {
+        window.presupuestosTabla = new PresupuestosTabla();
     });
 } else {
-    if (typeof requireAuth === 'function' && requireAuth()) {
-        window.pdvManager = new PDVManager();
-        window.pdvManager.cargarMateriales();
-    }
-}  */
+    window.presupuestosTabla = new PresupuestosTabla();
+} 

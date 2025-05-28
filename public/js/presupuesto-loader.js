@@ -7,10 +7,18 @@ class PresupuestoLoader {
         
         // Inicializar cuando el DOM esté listo
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', async () => {
-                await this.cargarDatosPresupuesto();
+            document.addEventListener('DOMContentLoaded', () => {
+                // Mostrar el spinner inmediatamente al cargar la página
+                if (window.spinner) {
+                    window.spinner.show();
+                }
+                this.cargarDatosPresupuesto();
             });
         } else {
+            // Mostrar el spinner inmediatamente
+            if (window.spinner) {
+                window.spinner.show();
+            }
             this.cargarDatosPresupuesto();
         }
     }
@@ -28,10 +36,9 @@ class PresupuestoLoader {
             
             if (!codigoOT || !token) {
                 console.error('Código OT o token no encontrados en la URL');
+                if (window.spinner) window.spinner.hide();
                 return;
             }
-            
-            console.log('Obteniendo datos del presupuesto para OT:', codigoOT);
             
             // Hacer la llamada al endpoint
             const response = await fetch(`/api/presupuestoEscaparate/${codigoOT}`, {
@@ -49,19 +56,20 @@ class PresupuestoLoader {
             const responseData = await response.json();
             console.log('Datos del presupuesto obtenidos:', responseData);
             
-            // Guardar los datos para uso posterior
+            // Guardar los datos y procesar
             if (responseData.status && responseData.data && responseData.data.data) {
                 this.datosPresupuesto = responseData.data.data[0];
-                
-                // Inicializar datos del cliente si existen
-                if (this.datosPresupuesto) {
-                    this.inicializarDatosCliente();
-                    this.inicializarPuntosDeVenta();
-                }
+                this.inicializarDatosCliente();
+                this.inicializarPuntosDeVenta();
             }
             
         } catch (error) {
             console.error('Error al cargar datos del presupuesto:', error);
+        } finally {
+            // Ocultar el spinner cuando se completa la carga (ya sea con éxito o con error)
+            if (window.spinner) {
+                window.spinner.hide();
+            }
         }
     }
     
@@ -78,7 +86,7 @@ class PresupuestoLoader {
                 Account_Name: cliente.name
             }));
             
-            // Actualizar elementos visuales si existen
+            // Actualizar nombre del cliente en la interfaz
             const nombreClienteElement = document.getElementById('nombre-cliente-formulario');
             if (nombreClienteElement) {
                 nombreClienteElement.textContent = ` - ${cliente.name}`;
@@ -87,106 +95,76 @@ class PresupuestoLoader {
     }
     
     inicializarPuntosDeVenta() {
-        // Verificar si hay puntos de venta en los datos
-        if (!this.datosPresupuesto || !this.datosPresupuesto.puntos_de_venta) {
-            console.log('No hay puntos de venta en los datos del presupuesto');
-            return;
-        }
+        // Verificar si hay puntos de venta
+        if (!this.datosPresupuesto || !this.datosPresupuesto.puntos_de_venta) return;
         
         const pdvs = this.datosPresupuesto.puntos_de_venta;
         console.log(`Encontrados ${pdvs.length} puntos de venta para esta OT`);
         
-        // Imprimir la estructura del primer PDV para depuración
-        if (pdvs.length > 0) {
-            console.log('Estructura del primer PDV:', JSON.stringify(pdvs[0], null, 2));
-        }
+        if (!window.presupuestosTabla) return;
         
-        // Si existe pdvManager, podemos utilizar sus funciones
-        if (window.pdvManager) {
-            // Limpiar el contenedor de PDVs existente
-            const contenedorPDVs = document.getElementById('contenedor-pdvs');
-            if (contenedorPDVs) {
-                // Vaciar el contenedor antes de añadir los nuevos PDVs
-                contenedorPDVs.innerHTML = '';
-                
-                // Crear un PDV por cada punto de venta del backend
-                pdvs.forEach((pdv, index) => {
-                    console.log(`Creando PDV #${index + 1}: ${pdv.PDV_relacionados?.name || 'Sin nombre'}`);
-                    window.pdvManager.agregarNuevoPDV();
-                });
-                
-                console.log(`Se han creado ${pdvs.length} tablas de PDVs automáticamente`);
-                
-                // Después de crear todos los PDVs, inicializamos sus datos
-                // Esto asegura que todos los elementos DOM ya existen
-                setTimeout(() => {
-                    pdvs.forEach((pdv, index) => {
-                        this.inicializarDatosPDV(pdv, index);
-                    });
-                }, 100);
-            }
-        }
+        // Limpiar el contenedor de PDVs
+        const contenedorPDVs = document.getElementById('contenedor-pdvs');
+        if (!contenedorPDVs) return;
+        
+        contenedorPDVs.innerHTML = '';
+        
+        // Crear un PDV por cada punto de venta
+        pdvs.forEach((pdv, index) => {
+            window.presupuestosTabla.agregarNuevoPDV();
+            
+            // Esperar a que el DOM se actualice antes de añadir escaparates
+            setTimeout(() => {
+                this.agregarEscaparates(pdv, index);
+            }, 50);
+        });
     }
     
-    inicializarDatosPDV(pdvData, index) {
-        // Aquí podemos inicializar campos específicos para cada PDV
-        // si el backend nos proporciona esos datos
+    agregarEscaparates(pdvData, index) {
+        if (!pdvData.escaparates || !pdvData.escaparates.length) return;
         
-        const tablasPDV = document.querySelectorAll('.tabla-pdv');
-        if (tablasPDV.length <= index) return;
+        const tabla = document.getElementById(`tabla-pdv-${index}`);
+        if (!tabla || !window.presupuestosTabla) return;
         
-        const pdvDiv = tablasPDV[index];
-        if (!pdvDiv) return;
-        
-        // Extraer el ID de la tabla para este PDV
-        const tablaId = `tabla-pdv-${index}`;
-        const tabla = document.getElementById(tablaId);
-        if (!tabla) return;
-        
-        console.log(`Inicializando datos para PDV #${index + 1}: ${pdvData.PDV_relacionados?.name || 'Sin nombre'}`);
-        
-        // Si hay líneas en el PDV, agregamos una fila por cada línea
-        if (pdvData.lineas && pdvData.lineas.length > 0) {
-            // Agregar la primera línea si no existe
-            if (tabla.querySelector('tbody').children.length === 0 && window.pdvManager) {
-                window.pdvManager.agregarFila(index);
-            }
+        // Agregar una fila por cada escaparate
+        pdvData.escaparates.forEach((escaparate, escIndex) => {
+            window.presupuestosTabla.agregarFila(index);
             
-            // Inicializar los datos de la primera línea
-            const primeraLinea = pdvData.lineas[0];
-            if (primeraLinea) {
-                // Aquí puedes inicializar los campos específicos de la primera línea
-                // Por ejemplo, si hay datos de isla
-                if (primeraLinea.Isla) {
-                    const selectIsla = pdvDiv.querySelector('.isla');
-                    if (selectIsla) {
-                        selectIsla.value = primeraLinea.Isla;
-                    }
-                }
-                
-                // Puedes inicializar más campos según los datos disponibles
+            // Inicializar datos en la fila creada
+            const tbody = tabla.querySelector('tbody');
+            if (tbody && tbody.children[escIndex]) {
+                const fila = tbody.children[escIndex];
+                this.inicializarCamposEscaparate(fila, escaparate);
             }
-            
-            // Si hay más líneas, podríamos agregarlas también
-            // Esto es solo un ejemplo, adapta según la estructura real de tus datos
-        }
-        
-        // Verificar si hay datos de escaparates
-        if (pdvData.escaparates && pdvData.escaparates.length > 0) {
-            console.log(`PDV #${index + 1} tiene ${pdvData.escaparates.length} escaparates`);
-            
-            // Aquí podrías inicializar datos relacionados con escaparates
-            // por ejemplo, actualizar el campo de escaparate si existe
-            const escaparateInput = pdvDiv.querySelector('.escaparate');
-            if (escaparateInput) {
-                // Si hay información de escaparates, podríamos mostrarla
-                escaparateInput.value = `${pdvData.escaparates.length} escaparates`;
-            }
-        }
+        });
     }
     
-    obtenerDatosPresupuesto() {
-        return this.datosPresupuesto;
+    inicializarCamposEscaparate(fila, escaparate) {
+        // Mapeo simple de campos comunes
+        const campos = [
+            { selector: 'input[placeholder="Concepto"]', prop: 'Name' },
+            { selector: 'input[placeholder="Alto"]', prop: 'Alto' },
+            { selector: 'input[placeholder="Ancho"]', prop: 'Ancho' },
+            { selector: '.material', prop: 'Material' },
+            { selector: '.precio-mp', prop: 'Precio_MP' },
+            { selector: '.precio-unitario', prop: 'Precio_unitario' },
+            { selector: '.unidades', prop: 'Unidades' },
+            { selector: '.margen', prop: 'Margen' },
+            { selector: '.total', prop: 'Total' }
+        ];
+        
+        // Asignar valores a los campos
+        campos.forEach(campo => {
+            const elemento = fila.querySelector(campo.selector);
+            if (elemento && escaparate[campo.prop] !== undefined) {
+                elemento.value = escaparate[campo.prop];
+            }
+        });
+        
+        // Calcular totales si es necesario
+        if (window.presupuestosTabla) {
+            window.presupuestosTabla.calcularTotales(fila);
+        }
     }
 }
 
