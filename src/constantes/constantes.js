@@ -20,7 +20,8 @@ export const diccionarioCamposZoho = {
     'MisTrabajos': 'Approvals',
     'MontadoresRutas': 'Montadores_Rutas',
     'OTPDV': 'OT_PDV',
-    'Variables': 'Variables'
+    'Variables': 'Variables',
+    "ElementosDeEscaparates": 'Elementos_de_Escaparates',
 }
 
 export const diccionarioCamposNotion = {
@@ -59,6 +60,36 @@ export const diccionarioCamposNotion = {
       "lat": "number",                              // Del campo "lat"
       "lng": "number",                              // Del campo "lng"
       "Nº teléfono": "rich_text",                   // Del campo "N_tel_fono"
+    },
+    
+    Cliente: {
+      "Estado de envío": "rich_text",
+      "Ciudad de envío": "rich_text",          
+      "Nº": "rich_text",
+      "Fax": "rich_text",
+      "Código de facturación": "rich_text", 
+      "Clase de cliente": "select",
+      "Domicilio de envío": "rich_text", 
+      "Correo electrónico": "email", 
+      "Teléfono": "rich_text",
+      "Código  términos pago": "select",
+      "Impuesto": "select", 
+      "Ciudad de facturación": "rich_text",
+      "Grupo contable cliente": "select",
+      "Descuento realización":"number",
+      "Cód. forma pago":"select",
+      "Contacto":"rich_text",
+      "ID de registro":"rich_text",
+      "Código de envío":"number",
+      "Grupo contable negocio":"select",
+      "CIF/ NIF": "rich_text", 
+      "Contacto relacionado": "rich_text",
+      "Teléfono 2": "rich_text",
+      "Descuento montaje":"number",
+      "País de facturación": "rich_text",
+      "Domicilio de facturación":"rich_text", 
+      "Estado de facturación":"rich_text",
+      "Nombre": "title",
     },
   
     Material: {

@@ -18,6 +18,7 @@ class ots_notion_service {
         // IDs de las bases de datos de Notion por módulo
         this.db = {
             OT: process.env.PROYECTOS_NOTION,
+            Clientes: process.env.CLIENTES_NOTION,
             PDV: process.env.PUNTOS_DE_VENTA_NOTION,
             Material: process.env.MATERIALES_DE_ENMARQUE,
             Presupuesto: process.env.PRESUPUESTOS_ESCAPARATES,
@@ -35,6 +36,28 @@ class ots_notion_service {
     // ✅ 1. Relacionar o crear OT
     async siNoExisteOtCrearSinoRelacionar() {
         console.log("OTs en Notion (test):");
+        if (!this.body?.data.data || !Array.isArray(this.body.data.data) || !this.body.data.data[0]) {
+            throw new Error("El cuerpo recibido no contiene datos válidos en 'body.data.data[0]'");
+        }
+
+
+        const otZoho = this.body.data.data[0];
+        const codigoOT = otZoho.C_digo;
+
+        const otId = await this.notion.buscarPorCampo("OT", "Nº", codigoOT);
+
+        if (otId) return otId;
+
+        console.log("Crear página:");
+        const datosMapeados = mapearPresupuestosOT(otZoho);
+        const nuevaOtId = await this.notion.crearPagina("OT", datosMapeados);
+
+        return nuevaOtId;
+    }
+
+    // ✅ 1.5 Relacionar o crear Cliente
+    async siNoExisteClienteCrearSinoRelacionar() {
+        console.log("Cliente en Notion (test):");
         if (!this.body?.data.data || !Array.isArray(this.body.data.data) || !this.body.data.data[0]) {
             throw new Error("El cuerpo recibido no contiene datos válidos en 'body.data.data[0]'");
         }
