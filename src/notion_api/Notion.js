@@ -56,7 +56,10 @@ export class Notion {
    * Construye automáticamente los properties de una página Notion
    */
   construirPropertiesNotion(modulo, datosCRM, extras = {}) {
+    console.log("Construyendo properties para el módulo:", modulo);
+    console.log("Datos CRM:", datosCRM);
     const campos = diccionarioCamposNotion[modulo];
+    console.log("Campos definidos:", campos);
     const properties = {};
 
     for (const [campo, tipo] of Object.entries(campos)) {
@@ -78,6 +81,11 @@ export class Notion {
             rich_text: [{ text: { content: valor.toString() } }],
           };
           break;
+        case "email":
+          properties[campo] = {
+            email: valor ? valor.toString() : null,
+          };
+        break;
         case "date":
           properties[campo] = {
             date: {

@@ -65,6 +65,7 @@ class ots_notion_service {
 
 
         const clienteZoho = this.body.data.data[0].cliente;
+        console.log("Cliente Zoho:", clienteZoho);
         const codigoCliente = "zcrm_"+clienteZoho.id;
 
         console.log("Código Cliente: ", codigoCliente);
@@ -75,6 +76,7 @@ class ots_notion_service {
 
         console.log("Crear página:");
         const datosMapeados = mapearPresupuestosClientes(clienteZoho);
+
         const nuevaOtId = await this.notion.crearPagina("Clientes", datosMapeados);
 
         return nuevaOtId;
