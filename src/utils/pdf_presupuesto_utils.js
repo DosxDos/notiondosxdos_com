@@ -300,7 +300,7 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         'con domicilio en la Urbanización Juan Ascanio, s/n, Las Palmas, le informa que sus datos personales se almacenan en un fichero',
         'titularidad de la Sociedad, con la finalidad de realizar las gestiones necesarias en relación con el servicio prestado.',
         'De igual modo, le informamos de la posibilidad de ejercitar sus derechos de acceso, rectificación, cancelación y oposición',
-        'mediante petición dirigida a la Sociedad, a través del correo electrónico informatica@iidos.es.'
+        'mediante petición dirigida a la Sociedad, a través del correo electrónico o hola@dospordosgrupoimagen.com.'
       ];
       
       const margenX = 50;
