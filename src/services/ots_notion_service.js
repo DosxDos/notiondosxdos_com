@@ -63,16 +63,18 @@ class ots_notion_service {
         }
 
 
-        const otZoho = this.body.data.data[0];
-        const codigoOT = otZoho.C_digo;
+        const clienteZoho = this.body.data.data[0];
+        const codigoCliente = "zcrm_"+clienteZoho.Account_Name.id;
 
-        const otId = await this.notion.buscarPorCampo("OT", "Nº", codigoOT);
+        console.log("Código Cliente: ", codigoCliente);
 
-        if (otId) return otId;
+        const clienteId = await this.notion.buscarPorCampo("Clientes", "ID de registro", codigoCliente);
+
+        if (clienteId) return clienteId;
 
         console.log("Crear página:");
-        const datosMapeados = mapearPresupuestosOT(otZoho);
-        const nuevaOtId = await this.notion.crearPagina("OT", datosMapeados);
+        const datosMapeados = mapearPresupuestosOT(clienteZoho);
+        const nuevaOtId = await this.notion.crearPagina("Clientes", datosMapeados);
 
         return nuevaOtId;
     }

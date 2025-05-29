@@ -108,7 +108,8 @@ export const diccionarioCamposNotion = {
     Presupuesto: {
       "Cliente": "title",       // ✅ Campo de título principal
       "Foto": "url",                          
-      "Numero de OT": "relation",             
+      "Numero de OT": "relation",
+      "Clientes": "relation",       
       "Isla":"select", 
       "Coste Esc.": "number",                
       "Coste Montaje": "number",           
