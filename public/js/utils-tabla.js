@@ -1,306 +1,386 @@
 /**
- * Funciones de utilidad para generación de tablas de presupuestos
+ * Utilidades y funciones de soporte para tablas de presupuestos
+ * 
+ * NOTA: Las funciones de generación de HTML se han movido a templates.js
+ * y están disponibles a través del objeto global window.Templates
  */
 
+// Mantener compatibilidad con el código existente redirigiendo a Templates
+window.generarTemplatePDV = (index, obtenerNombrePDV) => window.Templates.generarTemplatePDV(index, obtenerNombrePDV);
+window.generarTemplateFilaPDV = (esFilaInicial, generarOpcionesMateriales) => window.Templates.generarTemplateFilaPDV(esFilaInicial, generarOpcionesMateriales);
+window.generarTemplateEscaparate = (pdvIndex, escaparateIndex) => window.Templates.generarTemplateEscaparate(pdvIndex, escaparateIndex);
+window.generarTemplateElemento = (esFilaInicial, generarOpcionesMateriales) => window.Templates.generarTemplateElemento(esFilaInicial, generarOpcionesMateriales);
+
 /**
- * Genera el template HTML para un punto de venta
- * @param {number} index - Índice del PDV
- * @param {Function} obtenerNombrePDV - Función para obtener el nombre del PDV
- * @returns {string} Template HTML del PDV
+ * Utilidades para tablas de presupuestos
  */
-function generarTemplatePDV(index, obtenerNombrePDV) {
-    // Comprobar si tenemos datos de puntos de venta disponibles
-    const nombrePDV = obtenerNombrePDV ? obtenerNombrePDV(index) : null;
+class TableUtils {
+    /**
+     * Maneja la subida de archivos y actualiza el botón
+     * @param {Event} event - Evento de cambio del input file
+     * @param {HTMLElement} button - Botón de subida que se actualizará
+     */
+    static handleFileUpload(event, button) {
+        const file = event.target.files[0];
+        if (file) {
+            button.textContent = file.name;
+            button.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
+        }
+    }
     
-    // Si tenemos un nombre de PDV, lo mostramos directamente
-    const pdvDisplay = nombrePDV ? 
-        `<div class="mb-4 w-full p-3 border rounded bg-gray-50 text-sm font-semibold">${nombrePDV}</div>` :
-        `<div class="mb-4 w-full p-3 border rounded bg-gray-50 text-sm font-semibold">Punto de Venta ${index + 1}</div>`;
+    /**
+     * Actualiza los índices de todos los PDVs para mantener la coherencia
+     * después de eliminar un PDV
+     */
+    static actualizarIndicesPDV() {
+        // Obtener todos los elementos PDV en el DOM
+        const pdvDivs = document.querySelectorAll('.tabla-pdv');
         
-    return `
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-800">PDV</h2>
-            <button class="eliminar-pdv text-red-600 hover:text-red-800">
-                <i class="fas fa-trash"></i> Eliminar PDV
-            </button>
-        </div>
-        ${pdvDisplay}
-
-        <!-- Información general del PDV -->
-        <div class="grid grid-cols-3 gap-4 mb-4">
-            <div class="p-2 border rounded">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
-                <div class="flex items-center">
-                    <input type="file" class="file-input-pdv hidden">
-                    <button class="upload-btn-pdv w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                        Subir foto
-                    </button>
-                </div>
-            </div>
-            <div class="p-2 border rounded">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Isla</label>
-                <select class="isla-pdv w-full p-1.5 border rounded">
-                    <option value="">Seleccionar</option>
-                    <option value="GC">GC</option>
-                    <option value="TFE">TFE</option>
-                    <option value="LZT">LZT</option>
-                    <option value="FTV">FTV</option>
-                    <option value="HIERRO">HIERRO</option>
-                    <option value="GOMERA">GOMERA</option>
-                    <option value="PALMA">PALMA</option>
-                </select>
-            </div>
-            <div class="p-2 border rounded">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Montaje</label>
-                <input type="number" step="0.01" class="montaje-pdv w-full p-1.5 border rounded">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 gap-4 mb-6">
-            <div class="p-2 border rounded">
-                <label class="block text-sm font-medium text-gray-700 mb-1">OBS</label>
-                <textarea class="obs-pdv w-full p-1.5 border rounded" rows="2"></textarea>
-            </div>
-        </div>
-
-        <!-- Totales del PDV -->
-        <div class="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded mb-4">
-            <div class="p-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Total Escaparates</label>
-                <input type="number" step="0.01" class="total-escaparates-pdv w-full p-1.5 border rounded" readonly>
-            </div>
-            <div class="p-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Total PDV</label>
-                <input type="number" step="0.01" class="total-pdv w-full p-1.5 border rounded" readonly>
-            </div>
-        </div>
-
-        <!-- Botón para desplegar/colapsar escaparates -->
-        <div class="mb-4">
-            <button class="toggle-escaparates w-full p-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded flex justify-between items-center" 
-                    data-pdv-index="${index}" 
-                    aria-expanded="false">
-                <span class="font-medium">Desplegar escaparates</span>
-                <i class="fas fa-chevron-down toggle-icon transition-transform duration-300"></i>
-            </button>
-        </div>
-
-        <!-- Sección de escaparates (colapsada por defecto) -->
-        <div class="escaparates-container mb-4 hidden">
-            <div id="escaparates-pdv-${index}" class="space-y-4">
-                <!-- Aquí se añadirán los escaparates dinámicamente -->
-            </div>
-            <div class="flex justify-end mt-2">
-                <button class="add-escaparate bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
-                        data-pdv-index="${index}">
-                    + Añadir escaparate
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Genera el template HTML para un escaparate dentro de un PDV
- * @param {number} pdvIndex - Índice del PDV al que pertenece
- * @param {number} escaparateIndex - Índice del escaparate
- * @returns {string} Template HTML del escaparate
- */
-function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
-    return `
-        <div class="escaparate-item border rounded p-3 bg-white" data-escaparate-index="${escaparateIndex}">
-            <div class="flex justify-between items-center mb-3">
-                <h4 class="text-md font-medium text-gray-800">Escaparate ${escaparateIndex + 1}</h4>
-                <button class="eliminar-escaparate text-red-600 hover:text-red-800">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+        // Recorrer y actualizar sus índices secuencialmente
+        pdvDivs.forEach((pdvDiv, nuevoIndex) => {
+            const viejoIndex = parseInt(pdvDiv.dataset.pdvIndex);
             
-            <div class="grid grid-cols-2 gap-4 mb-3">
-                <div class="p-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Escaparate</label>
-                    <input type="text" class="nombre-escaparate w-full p-1.5 border rounded">
-                </div>
-                <div class="p-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Total Escaparate</label>
-                    <input type="number" step="0.01" class="total-escaparate w-full p-1.5 border rounded" readonly>
-                </div>
-            </div>
-
-            <!-- Tabla de elementos del escaparate -->
-            <table class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-3 tabla-elementos-escaparate">
-                <thead class="bg-red-700 text-white text-sm text-center">
-                    <tr>
-                        <th class="p-2">Concepto</th>
-                        <th class="p-2">Alto</th>
-                        <th class="p-2">Ancho</th>
-                        <th class="p-2">Material</th>
-                        <th class="p-2">Precio/M.Prima</th>
-                        <th class="p-2">Precio Unitario</th>
-                        <th class="p-2">Unidades</th>
-                        <th class="p-2">Total</th>
-                        <th class="p-2">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="elementos-container">
-                    <!-- Aquí se añadirán los elementos dinámicamente -->
-                </tbody>
-                <tfoot class="bg-gray-50">
-                    <tr>
-                        <td colspan="7" class="text-right pr-3 font-medium">Total Escaparate:</td>
-                        <td class="p-2">
-                            <input type="number" step="0.01" class="total-elementos w-full p-1 border rounded" readonly>
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="flex justify-end">
-                <button class="add-elemento bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 transition"
-                        data-pdv-index="${pdvIndex}" 
-                        data-escaparate-index="${escaparateIndex}">
-                    + Añadir elemento
-                </button>
-            </div>
-        </div>
-    `;
+            // Solo actualizar si el índice ha cambiado
+            if (nuevoIndex !== viejoIndex) {
+                // Actualizar el atributo data-pdv-index
+                pdvDiv.dataset.pdvIndex = nuevoIndex;
+                
+                // Actualizar los data-pdv-index en los botones internos
+                const botonesConIndex = pdvDiv.querySelectorAll('[data-pdv-index]');
+                botonesConIndex.forEach(btn => {
+                    btn.dataset.pdvIndex = nuevoIndex;
+                });
+                
+                // Actualizar el ID del contenedor de escaparates
+                const escaparatesContainer = pdvDiv.querySelector(`#escaparates-pdv-${viejoIndex}`);
+                if (escaparatesContainer) {
+                    escaparatesContainer.id = `escaparates-pdv-${nuevoIndex}`;
+                }
+                
+                // Si hay datos en el presupuesto y se movió un PDV, actualizar sus datos
+                if (window.presupuestoLoader && window.presupuestoLoader.datosPresupuesto) {
+                    const puntosDeVenta = window.presupuestoLoader.datosPresupuesto.puntos_de_venta;
+                    if (Array.isArray(puntosDeVenta) && puntosDeVenta[viejoIndex]) {
+                        // Solo es necesario hacer algo si los índices no coinciden
+                        // Los datos ya fueron reordenados por el splice anterior
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Actualiza un select con opciones a partir de un array de datos
+     * @param {HTMLSelectElement} selectElement - Elemento select a actualizar
+     * @param {Array} opciones - Array de opciones (objetos con id y nombre)
+     * @param {Function} obtenerTexto - Función para obtener el texto de la opción
+     * @param {Function} obtenerValor - Función para obtener el valor de la opción
+     * @param {boolean} mantenerPrimeraOpcion - Si se debe mantener la primera opción del select
+     */
+    static actualizarSelect(selectElement, opciones, obtenerTexto, obtenerValor, mantenerPrimeraOpcion = true) {
+        if (!selectElement || !Array.isArray(opciones)) return;
+        
+        // Guardar el valor actual
+        const currentSelected = selectElement.value;
+        
+        // Limpiar opciones actuales excepto la primera si se indica
+        const startIndex = mantenerPrimeraOpcion ? 1 : 0;
+        while (selectElement.options.length > startIndex) {
+            selectElement.remove(startIndex);
+        }
+        
+        // Añadir nuevas opciones
+        opciones.forEach(opcion => {
+            const option = document.createElement('option');
+            option.value = obtenerValor(opcion);
+            option.textContent = obtenerTexto(opcion);
+            selectElement.appendChild(option);
+        });
+        
+        // Restaurar el valor seleccionado si aún existe
+        if (currentSelected) {
+            selectElement.value = currentSelected;
+        }
+    }
+    
+    /**
+     * Encuentra un elemento específico dentro de la estructura de PDVs
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate (opcional)
+     * @returns {Object} Objeto con referencias a los elementos encontrados
+     */
+    static encontrarElementos(pdvIndex, escaparateIndex = null) {
+        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+        if (!pdvDiv) return { pdvDiv: null };
+        
+        const result = { pdvDiv };
+        
+        if (escaparateIndex !== null) {
+            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
+            if (escaparateItem) {
+                result.escaparateItem = escaparateItem;
+                result.elementosContainer = escaparateItem.querySelector('.elementos-container');
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Ordena un array de objetos por una propiedad específica
+     * @param {Array} array - Array a ordenar
+     * @param {string|Function} propOrFn - Propiedad o función para obtener el valor de ordenación
+     * @param {boolean} ascending - Si el orden es ascendente (true) o descendente (false)
+     * @returns {Array} Array ordenado
+     */
+    static ordenarArray(array, propOrFn, ascending = true) {
+        if (!Array.isArray(array)) return [];
+        
+        return [...array].sort((a, b) => {
+            let valA, valB;
+            
+            if (typeof propOrFn === 'function') {
+                valA = propOrFn(a);
+                valB = propOrFn(b);
+            } else {
+                valA = a[propOrFn];
+                valB = b[propOrFn];
+            }
+            
+            // Manejar posibles valores nulos o undefined
+            if (valA === undefined || valA === null) valA = '';
+            if (valB === undefined || valB === null) valB = '';
+            
+            // Convertir a minúsculas si son strings
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+            
+            // Ordenar
+            if (valA < valB) return ascending ? -1 : 1;
+            if (valA > valB) return ascending ? 1 : -1;
+            return 0;
+        });
+    }
 }
+
+// Exponer la clase globalmente
+window.TableUtils = TableUtils;
 
 /**
- * Genera el template HTML para un elemento de escaparate
- * @param {boolean} esFilaInicial - Indica si es la primera fila del escaparate
- * @param {Function} generarOpcionesMateriales - Función para generar las opciones de materiales
- * @returns {string} Template HTML del elemento
+ * Manejadores de eventos para elementos de las tablas de presupuestos
+ * Esta clase ayuda a reducir la duplicación en presupuestos-tabla.js
  */
-function generarTemplateElemento(esFilaInicial = true, generarOpcionesMateriales) {
-    return `
-        <tr class="border-b text-center elemento-escaparate">
-            <td class="p-2">
-                <input type="text" class="concepto w-full p-1.5 border rounded text-sm" placeholder="Concepto">
-            </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="dimension alto w-16 p-1.5 border rounded text-sm" placeholder="Alto">
-            </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="dimension ancho w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
-            </td>
-            <td class="p-2">
-                <select class="material w-full p-1.5 border rounded">
-                    <option value="">Seleccionar</option>
-                    ${generarOpcionesMateriales ? generarOpcionesMateriales() : ''}
-                </select>
-            </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded">
-            </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
-            </td>
-            <td class="p-2">
-                <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
-            </td>
-            <td class="p-2">
-                <input type="number" step="0.01" class="total-elemento w-20 p-1.5 border rounded" readonly>
-            </td>
-            <td class="p-2">
-                <button class="eliminar-elemento text-red-500 hover:text-red-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </td>
-        </tr>
-    `;
+class EventHandlers {
+    /**
+     * Inicializa todos los eventos para un elemento (fila)
+     * @param {Element} elementoRow - Fila del elemento
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     */
+    static initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex) {
+        // Manejo de cálculos
+        const material = elementoRow.querySelector('.material');
+        if (material) {
+            material.addEventListener('change', () => window.calculadora.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex));
+        }
+
+        // Eventos para cálculos automáticos
+        ['alto', 'ancho', 'precio-unitario', 'unidades'].forEach(className => {
+            const input = elementoRow.querySelector(`.${className}`);
+            if (input) {
+                input.addEventListener('input', () => window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex));
+            }
+        });
+        
+        // Botón para eliminar elemento
+        const eliminarBtn = elementoRow.querySelector('.eliminar-elemento');
+        if (eliminarBtn) {
+            eliminarBtn.addEventListener('click', () => {
+                elementoRow.remove();
+                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+            });
+        }
+    }
+    
+    /**
+     * Inicializa eventos para campos específicos del elemento existente
+     * @param {Element} elementoRow - Fila del elemento
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     * @param {Function} actualizarCamposCallback - Función para actualizar campos
+     */
+    static initializeElementoExistenteEvents(elementoRow, pdvIndex, escaparateIndex, actualizarCamposCallback) {
+        // Evento para seleccionar concepto existente
+        const conceptoSelect = elementoRow.querySelector('.concepto-select');
+        if (conceptoSelect && typeof actualizarCamposCallback === 'function') {
+            conceptoSelect.addEventListener('change', () => {
+                actualizarCamposCallback(elementoRow, conceptoSelect.value, pdvIndex, escaparateIndex);
+            });
+        }
+
+        // Inicializar los eventos comunes
+        this.initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex);
+    }
+    
+    /**
+     * Inicializa eventos para un escaparate
+     * @param {Element} escaparateItem - Elemento del escaparate
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     * @param {Object} callbacks - Callbacks para eventos: agregarElemento, agregarElementoExistente
+     */
+    static initializeEscaparateEvents(escaparateItem, pdvIndex, escaparateIndex, callbacks) {
+        if (!escaparateItem) return;
+        
+        // Botón para agregar elemento nuevo
+        const addElementoNuevoBtn = escaparateItem.querySelector('.add-elemento-nuevo');
+        if (addElementoNuevoBtn && callbacks.agregarElemento) {
+            addElementoNuevoBtn.addEventListener('click', () => callbacks.agregarElemento(pdvIndex, escaparateIndex));
+        }
+
+        // Botón para agregar elemento existente
+        const addElementoExistenteBtn = escaparateItem.querySelector('.add-elemento-existente');
+        if (addElementoExistenteBtn && callbacks.agregarElementoExistente) {
+            addElementoExistenteBtn.addEventListener('click', () => callbacks.agregarElementoExistente(pdvIndex, escaparateIndex));
+        }
+
+        // Botón para eliminar escaparate
+        const deleteBtn = escaparateItem.querySelector('.eliminar-escaparate');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                escaparateItem.remove();
+                window.calculadora.actualizarTotalPDV(pdvIndex);
+            });
+        }
+
+        // Actualizar total cuando cambia el nombre del escaparate
+        const nombreEscaparate = escaparateItem.querySelector('.nombre-escaparate');
+        if (nombreEscaparate) {
+            nombreEscaparate.addEventListener('input', () => {
+                // Posible lógica para manejar cambios en el nombre
+            });
+        }
+    }
+    
+    /**
+     * Inicializa eventos para un PDV
+     * @param {Element} pdvDiv - Elemento del PDV
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {Object} callbacks - Callbacks para eventos: agregarEscaparate, cargarOpcionesPDV
+     */
+    static initializePDVEvents(pdvDiv, pdvIndex, callbacks) {
+        if (!pdvDiv) return;
+        
+        // Botón para agregar escaparate
+        const addEscaparateBtn = pdvDiv.querySelector('.add-escaparate');
+        if (addEscaparateBtn && callbacks.agregarEscaparate) {
+            addEscaparateBtn.addEventListener('click', () => callbacks.agregarEscaparate(pdvIndex));
+        }
+
+        // Botón para eliminar PDV
+        const deleteBtn = pdvDiv.querySelector('.eliminar-pdv');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                // Obtener el índice actual del PDV
+                const currentIndex = parseInt(pdvDiv.dataset.pdvIndex);
+                
+                // Eliminar el PDV del DOM
+                pdvDiv.remove();
+                
+                // Eliminar los datos del PDV del array en datosPresupuesto
+                if (window.presupuestoLoader && window.presupuestoLoader.datosPresupuesto) {
+                    const puntosDeVenta = window.presupuestoLoader.datosPresupuesto.puntos_de_venta;
+                    if (Array.isArray(puntosDeVenta) && puntosDeVenta.length > currentIndex) {
+                        // Eliminar el PDV del array
+                        puntosDeVenta.splice(currentIndex, 1);
+                    }
+                }
+                
+                // Actualizar los índices de los PDVs restantes
+                window.TableUtils.actualizarIndicesPDV();
+                
+                // Recalcular totales
+                window.calculadora.recalcularTotales();
+            });
+        }
+
+        // Gestión de la foto
+        const uploadBtn = pdvDiv.querySelector('.upload-btn-pdv');
+        const fileInput = pdvDiv.querySelector('.file-input-pdv');
+        
+        if (uploadBtn && fileInput) {
+            uploadBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => window.TableUtils.handleFileUpload(e, uploadBtn));
+        }
+
+        // Campos que actualizan totales
+        const montagePdv = pdvDiv.querySelector('.montaje-pdv');
+        if (montagePdv) {
+            montagePdv.addEventListener('input', () => window.calculadora.actualizarTotalPDV(pdvIndex));
+        }
+
+        // Botón para desplegar/colapsar escaparates
+        const toggleEscaparatesBtn = pdvDiv.querySelector('.toggle-escaparates');
+        if (toggleEscaparatesBtn) {
+            toggleEscaparatesBtn.addEventListener('click', () => {
+                const escaparatesContainer = pdvDiv.querySelector('.escaparates-container');
+                const toggleIcon = toggleEscaparatesBtn.querySelector('.toggle-icon');
+                const isExpanded = toggleEscaparatesBtn.getAttribute('aria-expanded') === 'true';
+                
+                if (escaparatesContainer) {
+                    if (isExpanded) {
+                        // Colapsar
+                        escaparatesContainer.classList.add('hidden');
+                        toggleEscaparatesBtn.setAttribute('aria-expanded', 'false');
+                        toggleEscaparatesBtn.querySelector('span').textContent = 'Desplegar escaparates';
+                        toggleIcon.classList.remove('transform', 'rotate-180');
+                    } else {
+                        // Desplegar
+                        escaparatesContainer.classList.remove('hidden');
+                        toggleEscaparatesBtn.setAttribute('aria-expanded', 'true');
+                        toggleEscaparatesBtn.querySelector('span').textContent = 'Colapsar escaparates';
+                        toggleIcon.classList.add('transform', 'rotate-180');
+                    }
+                }
+            });
+        }
+
+        // Manejo del select de puntos de venta si existe
+        const selectPDV = pdvDiv.querySelector('.nombre-pdv');
+        if (selectPDV && callbacks.cargarOpcionesPDV) {
+            // Cargar las opciones del select
+            callbacks.cargarOpcionesPDV(selectPDV);
+            
+            // Añadir evento de cambio
+            selectPDV.addEventListener('change', () => {
+                const selectedOption = selectPDV.options[selectPDV.selectedIndex];
+                const pdvId = selectPDV.value;
+                const pdvName = selectedOption.textContent;
+                
+                // Si tenemos un presupuesto cargado, actualizamos los datos
+                if (window.presupuestoLoader && window.presupuestoLoader.datosPresupuesto) {
+                    const puntosDeVenta = window.presupuestoLoader.datosPresupuesto.puntos_de_venta || [];
+                    
+                    // Si no existe el array de puntos de venta, lo creamos
+                    if (!Array.isArray(puntosDeVenta)) {
+                        window.presupuestoLoader.datosPresupuesto.puntos_de_venta = [];
+                    }
+                    
+                    // Si no existe el punto de venta en el índice actual, creamos un objeto vacío
+                    if (!puntosDeVenta[pdvIndex]) {
+                        puntosDeVenta[pdvIndex] = {};
+                    }
+                    
+                    // Actualizamos la información del PDV seleccionado
+                    puntosDeVenta[pdvIndex].PDV_relacionados = {
+                        id: pdvId,
+                        name: pdvName
+                    };
+                }
+            });
+        }
+    }
 }
 
-/**
- * Genera el template HTML para una fila de PDV (DEPRECATED - Usar nueva estructura)
- * @param {boolean} esFilaInicial - Indica si es la primera fila de la tabla
- * @param {Function} generarOpcionesMateriales - Función para generar las opciones de materiales
- * @returns {string} Template HTML de la fila
- */
-function generarTemplateFilaPDV(esFilaInicial = false, generarOpcionesMateriales) {
-    return `
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="file" class="file-input hidden">
-                <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                    Subir foto
-                </button>
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <select class="isla w-full p-1.5 border rounded">
-                    <option value="">Seleccionar</option>
-                    <option value="GC">GC</option>
-                    <option value="TFE">TFE</option>
-                    <option value="LZT">LZT</option>
-                    <option value="FTV">FTV</option>
-                    <option value="HIERRO">HIERRO</option>
-                    <option value="GOMERA">GOMERA</option>
-                    <option value="PALMA">PALMA</option>
-                </select>
-            ` : ''}
-        </td>
-        <td class="p-2">
-            <input type="text" class="w-full p-1.5 border rounded text-sm" placeholder="Concepto">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Alto">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
-        </td>
-        <td class="p-2">
-            <select class="material w-full p-1.5 border rounded">
-                <option value="">Seleccionar</option>
-                ${generarOpcionesMateriales ? generarOpcionesMateriales() : ''}
-            </select>
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="margen w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="total w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="text" class="escaparate w-24 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="text" class="obs w-20 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            <button class="eliminar-fila text-red-500 hover:text-red-700">
-                <i class="fas fa-times"></i>
-            </button>
-        </td>
-    `;
-}
-
-// Exponer las funciones globalmente
-window.generarTemplatePDV = generarTemplatePDV;
-window.generarTemplateFilaPDV = generarTemplateFilaPDV;
-window.generarTemplateEscaparate = generarTemplateEscaparate;
-window.generarTemplateElemento = generarTemplateElemento; 
+// Exponer la clase globalmente
+window.EventHandlers = EventHandlers; 

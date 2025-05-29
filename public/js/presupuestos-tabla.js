@@ -4,17 +4,28 @@
 class PresupuestosTabla {
     constructor() {
         this.materialesDisponibles = {};
+        this.puntosDeVentaDisponibles = [];
+        this.elementosExistentesDisponibles = [];
 
         // Inicializar cuando el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', async () => {
                 await this.initializeEventListeners();
-                await this.cargarMateriales();
+                await this.cargarDatos();
             });
         } else {
             this.initializeEventListeners();
-            this.cargarMateriales();
+            this.cargarDatos();
         }
+    }
+
+    async cargarDatos() {
+        // Cargar todos los datos necesarios en paralelo
+        await Promise.all([
+            this.cargarMateriales(),
+            this.cargarPuntosDeVenta(),
+            this.cargarElementosExistentes()
+        ]);
     }
 
     async initializeEventListeners() {
@@ -40,7 +51,7 @@ class PresupuestosTabla {
         pdvDiv.innerHTML = window.generarTemplatePDV(index, this.obtenerNombrePDV.bind(this));
         contenedorPDVs.appendChild(pdvDiv);
 
-        // Inicializar eventos para el nuevo PDV
+        // Inicializar eventos para el nuevo PDV usando EventHandlers
         this.initializePDVEvents(pdvDiv, index);
     }
 
@@ -72,65 +83,16 @@ class PresupuestosTabla {
     }
 
     initializePDVEvents(pdvDiv, pdvIndex) {
-        // Botón para agregar escaparate
-        const addEscaparateBtn = pdvDiv.querySelector('.add-escaparate');
-        if (addEscaparateBtn) {
-            addEscaparateBtn.addEventListener('click', () => this.agregarEscaparate(pdvIndex));
-        }
-
-        // Botón para eliminar PDV
-        const deleteBtn = pdvDiv.querySelector('.eliminar-pdv');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-                pdvDiv.remove();
-                this.recalcularTotales();
-            });
-        }
-
-        // Gestión de la foto
-        const uploadBtn = pdvDiv.querySelector('.upload-btn-pdv');
-        const fileInput = pdvDiv.querySelector('.file-input-pdv');
-        
-        if (uploadBtn && fileInput) {
-            uploadBtn.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => this.handleFileUpload(e, uploadBtn));
-        }
-
-        // Campos que actualizan totales
-        const montagePdv = pdvDiv.querySelector('.montaje-pdv');
-        if (montagePdv) {
-            montagePdv.addEventListener('input', () => this.actualizarTotalPDV(pdvIndex));
-        }
-
-        // Botón para desplegar/colapsar escaparates
-        const toggleEscaparatesBtn = pdvDiv.querySelector('.toggle-escaparates');
-        if (toggleEscaparatesBtn) {
-            toggleEscaparatesBtn.addEventListener('click', () => {
-                const escaparatesContainer = pdvDiv.querySelector('.escaparates-container');
-                const toggleIcon = toggleEscaparatesBtn.querySelector('.toggle-icon');
-                const isExpanded = toggleEscaparatesBtn.getAttribute('aria-expanded') === 'true';
-                
-                if (escaparatesContainer) {
-                    if (isExpanded) {
-                        // Colapsar
-                        escaparatesContainer.classList.add('hidden');
-                        toggleEscaparatesBtn.setAttribute('aria-expanded', 'false');
-                        toggleEscaparatesBtn.querySelector('span').textContent = 'Desplegar escaparates';
-                        toggleIcon.classList.remove('transform', 'rotate-180');
-                    } else {
-                        // Desplegar
-                        escaparatesContainer.classList.remove('hidden');
-                        toggleEscaparatesBtn.setAttribute('aria-expanded', 'true');
-                        toggleEscaparatesBtn.querySelector('span').textContent = 'Colapsar escaparates';
-                        toggleIcon.classList.add('transform', 'rotate-180');
-                    }
-                }
-            });
-        }
+        // Usar EventHandlers para inicializar todos los eventos del PDV
+        window.EventHandlers.initializePDVEvents(pdvDiv, pdvIndex, {
+            agregarEscaparate: this.agregarEscaparate.bind(this),
+            cargarOpcionesPDV: this.cargarOpcionesPDV.bind(this)
+        });
     }
 
     agregarEscaparate(pdvIndex) {
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+        // Usar TableUtils para encontrar los elementos necesarios
+        const { pdvDiv } = window.TableUtils.encontrarElementos(pdvIndex);
         if (!pdvDiv) return;
 
         const escaparatesContainer = pdvDiv.querySelector(`#escaparates-pdv-${pdvIndex}`);
@@ -142,7 +104,7 @@ class PresupuestosTabla {
         escaparateDiv.innerHTML = window.generarTemplateEscaparate(pdvIndex, escaparateIndex);
         escaparatesContainer.appendChild(escaparateDiv.firstElementChild);
 
-        // Inicializar eventos para el nuevo escaparate
+        // Inicializar eventos para el nuevo escaparate usando EventHandlers
         this.initializeEscaparateEvents(pdvIndex, escaparateIndex);
         
         // Añadir primer elemento al escaparate
@@ -150,247 +112,215 @@ class PresupuestosTabla {
     }
 
     initializeEscaparateEvents(pdvIndex, escaparateIndex) {
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-
-        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
+        // Usar TableUtils para encontrar los elementos necesarios
+        const { escaparateItem } = window.TableUtils.encontrarElementos(pdvIndex, escaparateIndex);
         if (!escaparateItem) return;
 
-        // Botón para agregar elemento
-        const addElementoBtn = escaparateItem.querySelector('.add-elemento');
-        if (addElementoBtn) {
-            addElementoBtn.addEventListener('click', () => this.agregarElemento(pdvIndex, escaparateIndex));
-        }
-
-        // Botón para eliminar escaparate
-        const deleteBtn = escaparateItem.querySelector('.eliminar-escaparate');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-                escaparateItem.remove();
-                this.actualizarTotalPDV(pdvIndex);
-            });
-        }
-
-        // Actualizar total cuando cambia el nombre del escaparate
-        const nombreEscaparate = escaparateItem.querySelector('.nombre-escaparate');
-        if (nombreEscaparate) {
-            nombreEscaparate.addEventListener('input', () => {
-                // Posible lógica para manejar cambios en el nombre
-            });
-        }
+        // Usar EventHandlers para inicializar todos los eventos del escaparate
+        window.EventHandlers.initializeEscaparateEvents(
+            escaparateItem, 
+            pdvIndex, 
+            escaparateIndex, 
+            {
+                agregarElemento: this.agregarElemento.bind(this),
+                agregarElementoExistente: this.agregarElementoExistente.bind(this)
+            }
+        );
     }
 
     agregarElemento(pdvIndex, escaparateIndex) {
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-
-        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-        if (!escaparateItem) return;
-
-        const elementosContainer = escaparateItem.querySelector('.elementos-container');
+        // Usar TableUtils para encontrar los elementos necesarios
+        const { elementosContainer } = window.TableUtils.encontrarElementos(pdvIndex, escaparateIndex);
         if (!elementosContainer) return;
 
         const elementoRow = document.createElement('tr');
         elementoRow.innerHTML = window.generarTemplateElemento(true, this.generarOpcionesMateriales.bind(this));
         elementosContainer.appendChild(elementoRow);
 
-        // Inicializar eventos para el nuevo elemento
-        this.initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex);
-    }
-
-    initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex) {
-        // Manejo de cálculos
-        const material = elementoRow.querySelector('.material');
-        if (material) {
-            material.addEventListener('change', () => this.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex));
-        }
-
-        // Eventos para cálculos automáticos
-        ['alto', 'ancho', 'precio-unitario', 'unidades'].forEach(className => {
-            const input = elementoRow.querySelector(`.${className}`);
-            if (input) {
-                input.addEventListener('input', () => this.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex));
-            }
-        });
-        
-        // Botón para eliminar elemento
-        const eliminarBtn = elementoRow.querySelector('.eliminar-elemento');
-        if (eliminarBtn) {
-            eliminarBtn.addEventListener('click', () => {
-                elementoRow.remove();
-                this.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
-            });
-        }
-    }
-
-    handleFileUpload(event, button) {
-        const file = event.target.files[0];
-        if (file) {
-            button.textContent = file.name;
-            button.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
-        }
-    }
-
-    actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex) {
-        const material = elementoRow.querySelector('.material');
-        const precioMP = elementoRow.querySelector('.precio-mp');
-        if (material && precioMP) {
-            const materialSeleccionado = material.value;
-            precioMP.value = this.materialesDisponibles[materialSeleccionado] || '';
-            this.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
-        }
-    }
-
-    calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex) {
-        const alto = parseFloat(elementoRow.querySelector('.alto').value) || 0;
-        const ancho = parseFloat(elementoRow.querySelector('.ancho').value) || 0;
-        const precioUnitario = parseFloat(elementoRow.querySelector('.precio-unitario').value) || 0;
-        const unidades = parseInt(elementoRow.querySelector('.unidades').value) || 1;
-
-        const total = (alto * ancho * precioUnitario * unidades).toFixed(2);
-        elementoRow.querySelector('.total-elemento').value = total;
-
-        this.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
-    }
-
-    actualizarTotalEscaparate(pdvIndex, escaparateIndex) {
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-
-        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-        if (!escaparateItem) return;
-
-        const totales = Array.from(escaparateItem.querySelectorAll('.total-elemento'))
-            .map(input => parseFloat(input.value) || 0);
-        
-        const totalEscaparate = totales.reduce((sum, value) => sum + value, 0).toFixed(2);
-        
-        // Actualizar total en el footer de la tabla
-        const totalElementosInput = escaparateItem.querySelector('.total-elementos');
-        if (totalElementosInput) {
-            totalElementosInput.value = totalEscaparate;
-        }
-        
-        // Actualizar total en el header del escaparate
-        const totalEscaparateInput = escaparateItem.querySelector('.total-escaparate');
-        if (totalEscaparateInput) {
-            totalEscaparateInput.value = totalEscaparate;
-        }
-
-        this.actualizarTotalPDV(pdvIndex);
-    }
-
-    actualizarTotalPDV(pdvIndex) {
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-
-        // Sumar totales de todos los escaparates
-        const totalesEscaparates = Array.from(pdvDiv.querySelectorAll('.total-escaparate'))
-            .map(input => parseFloat(input.value) || 0);
-        
-        const totalEscaparates = totalesEscaparates.reduce((sum, value) => sum + value, 0);
-        
-        // Obtener valor del montaje
-        const montaje = parseFloat(pdvDiv.querySelector('.montaje-pdv').value) || 0;
-        
-        // Calcular total del PDV (escaparates + montaje)
-        const totalPDV = (totalEscaparates + montaje).toFixed(2);
-        
-        // Actualizar campos
-        const totalEscaparatesInput = pdvDiv.querySelector('.total-escaparates-pdv');
-        if (totalEscaparatesInput) {
-            totalEscaparatesInput.value = totalEscaparates.toFixed(2);
-        }
-        
-        const totalPDVInput = pdvDiv.querySelector('.total-pdv');
-        if (totalPDVInput) {
-            totalPDVInput.value = totalPDV;
-        }
-
-        this.recalcularTotales();
-    }
-
-    recalcularTotales() {
-        // Calcular el total general sumando todos los totales de PDV
-        const totalesPDV = Array.from(document.querySelectorAll('.total-pdv'))
-            .map(input => parseFloat(input.value) || 0);
-        
-        const totalGeneral = totalesPDV.reduce((sum, value) => sum + value, 0).toFixed(2);
-        
-        // Actualizar total general si existe un elemento para ello
-        const totalGeneralInput = document.getElementById('total-general');
-        if (totalGeneralInput) {
-            totalGeneralInput.value = totalGeneral;
-        }
-    }
-
-    generarOpcionesMateriales() {
-        return Object.entries(this.materialesDisponibles)
-            .map(([nombre, precio]) => `<option value="${nombre}">${nombre}</option>`)
-            .join('');
+        // Inicializar eventos para el nuevo elemento usando EventHandlers
+        window.EventHandlers.initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex);
     }
 
     async cargarMateriales() {
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            
-            if (!token) {
-                console.error('Token no encontrado en la URL');
+            if (!window.apiServices) {
+                console.error('ApiServices no está disponible');
                 return;
             }
             
-            const res = await fetch('/api/materialesPresupuesto', {
-                headers: {
-                    'Authorization': token
-                }
-            });
+            const data = await window.apiServices.obtenerMateriales();
+
+            // Actualizar materialesDisponibles en calculadora
+            window.calculadora.actualizarMaterialesDisponibles(data);
             
-            if (!res.ok) throw new Error('Error al cargar materiales');
-            const data = await res.json();
-
-            // Actualizar materialesDisponibles
-            this.materialesDisponibles = {};
-            if (data.materiales && Array.isArray(data.materiales)) {
-                data.materiales.forEach(material => {
-                    if (material.nombre && material.importe !== undefined) {
-                        this.materialesDisponibles[material.nombre] = material.importe;
-                    }
-                });
-            }
-
-            // Actualizar todos los selectores de materiales existentes
-            document.querySelectorAll('.material').forEach(select => {
-                const currentValue = select.value;
-                select.innerHTML = '<option value="">Seleccionar</option>' +
-                    Object.entries(this.materialesDisponibles)
-                        .map(([nombre, precio]) => `<option value="${nombre}">${nombre}</option>`)
-                        .join('');
-                
-                // Restaurar el valor seleccionado si aún existe
-                if (currentValue && this.materialesDisponibles[currentValue]) {
-                    select.value = currentValue;
-                }
-
-                // Actualizar el precio si hay un material seleccionado
-                if (select.value) {
-                    const elementoRow = select.closest('tr');
-                    if (elementoRow) {
-                        const pdvDiv = select.closest('.tabla-pdv');
-                        const escaparateItem = select.closest('.escaparate-item');
-                        
-                        if (pdvDiv && escaparateItem) {
-                            const pdvIndex = parseInt(pdvDiv.dataset.pdvIndex);
-                            const escaparateIndex = parseInt(escaparateItem.dataset.escaparateIndex);
-                            
-                            this.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex);
-                        }
-                    }
-                }
-            });
+            // Actualizar selectores de materiales
+            window.calculadora.actualizarSelectoresMateriales();
         } catch (error) {
             console.error('Error al cargar materiales:', error);
         }
+    }
+
+    async cargarPuntosDeVenta() {
+        try {
+            if (!window.apiServices) {
+                console.error('ApiServices no está disponible');
+                return;
+            }
+            
+            this.puntosDeVentaDisponibles = await window.apiServices.obtenerPuntosDeVenta();
+            
+            // Actualizar los selects existentes
+            this.actualizarSelectsPDV();
+        } catch (error) {
+            console.error('Error al cargar puntos de venta:', error);
+        }
+    }
+    
+    cargarOpcionesPDV(selectElement) {
+        if (!selectElement) return;
+        
+        // Usar TableUtils para actualizar el select
+        window.TableUtils.actualizarSelect(
+            selectElement,
+            // Filtrar y ordenar los PDVs válidos
+            window.TableUtils.ordenarArray(
+                this.puntosDeVentaDisponibles.filter(pdv => pdv && pdv.id && (pdv.Name || pdv.name)),
+                // Función para obtener el nombre para ordenar
+                pdv => (pdv.Name || pdv.name || '').toLowerCase()
+            ),
+            // Función para obtener el texto a mostrar
+            pdv => pdv.Name || pdv.name,
+            // Función para obtener el valor
+            pdv => pdv.id,
+            // Mantener la primera opción (opción "Seleccionar")
+            true
+        );
+    }
+    
+    actualizarSelectsPDV() {
+        document.querySelectorAll('.nombre-pdv').forEach(select => this.cargarOpcionesPDV(select));
+    }
+
+    /**
+     * Genera opciones HTML para selectores de materiales
+     * @returns {string} HTML con opciones
+     */
+    generarOpcionesMateriales() {
+        return window.calculadora.generarOpcionesMateriales();
+    }
+
+    /**
+     * Agrega un elemento existente al escaparate
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     */
+    agregarElementoExistente(pdvIndex, escaparateIndex) {
+        // Usar TableUtils para encontrar los elementos necesarios
+        const { elementosContainer } = window.TableUtils.encontrarElementos(pdvIndex, escaparateIndex);
+        if (!elementosContainer) return;
+
+        const elementoRow = document.createElement('tr');
+        elementoRow.innerHTML = window.Templates.generarTemplateElementoExistente(
+            true, 
+            this.generarOpcionesMateriales.bind(this),
+            this.generarOpcionesElementosExistentes.bind(this)
+        );
+        elementosContainer.appendChild(elementoRow);
+
+        // Inicializar eventos para el nuevo elemento usando EventHandlers
+        window.EventHandlers.initializeElementoExistenteEvents(
+            elementoRow, 
+            pdvIndex, 
+            escaparateIndex, 
+            this.actualizarCamposDesdeElementoExistente.bind(this)
+        );
+    }
+
+    /**
+     * Actualiza los campos de un elemento basado en el elemento existente seleccionado
+     * @param {Element} elementoRow - Fila del elemento
+     * @param {string} elementoId - ID del elemento existente seleccionado
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     */
+    actualizarCamposDesdeElementoExistente(elementoRow, elementoId, pdvIndex, escaparateIndex) {
+        if (!elementoId) return;
+
+        // Buscar el elemento existente por ID
+        const elementoExistente = this.elementosExistentesDisponibles.find(elem => elem.id === elementoId);
+        if (!elementoExistente) return;
+
+        // Actualizar campos con los datos del elemento existente
+        const campos = [
+            { selector: '.alto', propiedad: 'Alto' },
+            { selector: '.ancho', propiedad: 'Ancho' },
+            { selector: '.material', propiedad: 'Material' },
+            { selector: '.precio-unitario', propiedad: 'Precio_Unitario' }
+        ];
+        
+        campos.forEach(({ selector, propiedad }) => {
+            const input = elementoRow.querySelector(selector);
+            if (input && elementoExistente[propiedad]) {
+                input.value = elementoExistente[propiedad];
+            }
+        });
+
+        // Actualizar precio MP después de cambiar el material
+        const materialSelect = elementoRow.querySelector('.material');
+        if (materialSelect) {
+            window.calculadora.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex);
+        }
+
+        // Recalcular totales
+        window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
+    }
+
+    /**
+     * Genera las opciones HTML para el selector de elementos existentes
+     * @returns {string} HTML con las opciones
+     */
+    generarOpcionesElementosExistentes() {
+        return this.elementosExistentesDisponibles
+            .map(elem => `<option value="${elem.id}">${elem.Nombre || elem.Name || elem.name || 'Elemento sin nombre'}</option>`)
+            .join('');
+    }
+
+    /**
+     * Carga los elementos existentes desde el API
+     */
+    async cargarElementosExistentes() {
+        try {
+            if (!window.apiServices) {
+                console.error('ApiServices no está disponible');
+                return;
+            }
+            
+            this.elementosExistentesDisponibles = await window.apiServices.obtenerElementosExistentes();
+            
+            // Actualizar los selects existentes si hubiera alguno ya en la página
+            this.actualizarSelectsElementosExistentes();
+        } catch (error) {
+            console.error('Error al cargar elementos existentes:', error);
+        }
+    }
+    
+    /**
+     * Actualiza todos los selectores de elementos existentes en la página
+     */
+    actualizarSelectsElementosExistentes() {
+        document.querySelectorAll('.concepto-select').forEach(select => {
+            // Usar TableUtils para actualizar el select
+            window.TableUtils.actualizarSelect(
+                select,
+                this.elementosExistentesDisponibles,
+                // Función para obtener el texto a mostrar
+                elem => elem.Nombre || elem.Name || elem.name || 'Elemento sin nombre',
+                // Función para obtener el valor
+                elem => elem.id,
+                // Mantener la primera opción (opción "Seleccionar concepto")
+                true
+            );
+        });
     }
 }
 

@@ -24,36 +24,31 @@ class PresupuestoLoader {
     }
 
     async cargarDatosPresupuesto() {
+        // Mostrar spinner de carga
+        if (window.spinner) {
+            window.spinner.show();
+        }
+        
         try {
-            // Obtener el código OT de la URL
+            // Extraer el código de OT de la URL
             const urlPath = window.location.pathname;
             const pathParts = urlPath.split('/');
             const codigoOT = pathParts[pathParts.length - 1];
             
-            // Obtener el token de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            
-            if (!codigoOT || !token) {
-                console.error('Código OT o token no encontrados en la URL');
+            if (!codigoOT) {
+                console.error('Código OT no encontrado en la URL');
                 if (window.spinner) window.spinner.hide();
                 return;
             }
             
-            // Hacer la llamada al endpoint
-            const response = await fetch(`/api/presupuestoEscaparate/${codigoOT}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Error al obtener los datos del presupuesto: ${response.status}`);
+            if (!window.apiServices) {
+                console.error('ApiServices no está disponible');
+                if (window.spinner) window.spinner.hide();
+                return;
             }
             
-            const responseData = await response.json();
+            // Hacer la llamada al endpoint a través del servicio API
+            const responseData = await window.apiServices.obtenerPresupuestoPorOT(codigoOT);
             console.log('Datos del presupuesto obtenidos:', responseData);
             
             // Guardar los datos y procesar
@@ -139,9 +134,9 @@ class PresupuestoLoader {
             });
         }
         
-        // Recalcular totales del PDV
-        if (window.presupuestosTabla) {
-            window.presupuestosTabla.actualizarTotalPDV(pdvIndex);
+        // Recalcular totales del PDV usando el servicio de calculadora
+        if (window.calculadora) {
+            window.calculadora.actualizarTotalPDV(pdvIndex);
         }
     }
     
@@ -201,9 +196,9 @@ class PresupuestoLoader {
         // Cargar elementos del escaparate
         this.cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData);
         
-        // Actualizar totales
-        if (window.presupuestosTabla) {
-            window.presupuestosTabla.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+        // Actualizar totales usando la calculadora
+        if (window.calculadora) {
+            window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
         }
     }
     
@@ -231,41 +226,8 @@ class PresupuestoLoader {
     }
     
     cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData) {
-        // Determinar cuántos elementos hay en el escaparate
-        // En el modelo de datos que muestras, parece que hay elementos nombrados del 1 al 10
-        const elementosExistentes = [];
+        if (!escaparateData.elementos || !Array.isArray(escaparateData.elementos)) return;
         
-        for (let i = 1; i <= 10; i++) {
-            const elementoKey = `Elemento${i}`;
-            const altoKey = `ALT${i}`;
-            const anchoKey = `ANC${i}`;
-            const materialKey = `Material${i}`;
-            const unidadesKey = `UD${i}`;
-            
-            // Si hay datos para este elemento, lo agregamos
-            if (escaparateData[elementoKey]) {
-                elementosExistentes.push({
-                    concepto: escaparateData[elementoKey],
-                    alto: escaparateData[altoKey],
-                    ancho: escaparateData[anchoKey],
-                    material: escaparateData[materialKey],
-                    unidades: escaparateData[unidadesKey]
-                });
-            }
-        }
-        
-        // Si no hay elementos definidos, intentamos usar datos generales
-        if (elementosExistentes.length === 0 && escaparateData.Name) {
-            elementosExistentes.push({
-                concepto: escaparateData.Name,
-                alto: escaparateData.Alto_del_Suelo || escaparateData.Alto,
-                ancho: escaparateData.Ancho_del_Suelo || escaparateData.Ancho,
-                material: escaparateData.Material || '',
-                unidades: escaparateData.UD1 || '1'
-            });
-        }
-        
-        // Cargar los elementos encontrados
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
         if (!pdvDiv) return;
         
@@ -275,63 +237,80 @@ class PresupuestoLoader {
         const elementosContainer = escaparateItem.querySelector('.elementos-container');
         if (!elementosContainer) return;
         
-        // Limpiar elementos existentes
-        elementosContainer.innerHTML = '';
+        // Obtener elementos existentes
+        const elementosExistentes = elementosContainer.querySelectorAll('tr');
         
-        // Agregar los elementos cargados
-        elementosExistentes.forEach((elemento, idx) => {
+        // Si no hay suficientes filas, agregar las necesarias
+        while (elementosExistentes.length < escaparateData.elementos.length) {
             if (window.presupuestosTabla) {
                 window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
-                
-                // Obtener el último elemento agregado
-                const elementoRows = elementosContainer.querySelectorAll('.elemento-escaparate');
-                if (elementoRows.length > idx) {
-                    const elementoRow = elementoRows[idx];
-                    this.cargarDatosElemento(elementoRow, elemento, pdvIndex, escaparateIndex);
-                }
+            }
+        }
+        
+        // Obtener la lista actualizada de elementos
+        const elementosRows = elementosContainer.querySelectorAll('tr');
+        
+        // Cargar datos en cada fila
+        escaparateData.elementos.forEach((elemento, elementoIndex) => {
+            if (elementoIndex < elementosRows.length) {
+                this.cargarDatosElemento(elementosRows[elementoIndex], elemento, pdvIndex, escaparateIndex);
             }
         });
+        
+        // Actualizar totales
+        if (window.calculadora) {
+            window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+        }
     }
     
     cargarDatosElemento(elementoRow, elementoData, pdvIndex, escaparateIndex) {
-        // Cargar concepto
-        const conceptoInput = elementoRow.querySelector('.concepto');
-        if (conceptoInput && elementoData.concepto) {
-            conceptoInput.value = elementoData.concepto;
-        }
-        
-        // Cargar alto
-        const altoInput = elementoRow.querySelector('.alto');
-        if (altoInput && elementoData.alto) {
-            altoInput.value = elementoData.alto;
-        }
-        
-        // Cargar ancho
-        const anchoInput = elementoRow.querySelector('.ancho');
-        if (anchoInput && elementoData.ancho) {
-            anchoInput.value = elementoData.ancho;
-        }
-        
-        // Cargar material
-        const materialSelect = elementoRow.querySelector('.material');
-        if (materialSelect && elementoData.material) {
-            materialSelect.value = elementoData.material;
-            
-            // Actualizar precio materia prima basado en el material
-            if (window.presupuestosTabla) {
-                window.presupuestosTabla.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex);
+        // Cargar Material si existe
+        if (elementoData.Material) {
+            const materialSelect = elementoRow.querySelector('.material');
+            if (materialSelect) {
+                materialSelect.value = elementoData.Material;
+                
+                // Actualizar precio materia prima
+                const precioMP = elementoRow.querySelector('.precio-mp');
+                if (precioMP && window.calculadora && window.calculadora.materialesDisponibles) {
+                    precioMP.value = window.calculadora.materialesDisponibles[elementoData.Material] || '';
+                }
             }
         }
         
-        // Cargar unidades
-        const unidadesInput = elementoRow.querySelector('.unidades');
-        if (unidadesInput && elementoData.unidades) {
-            unidadesInput.value = elementoData.unidades;
+        // Cargar Nombre si existe
+        if (elementoData.Nombre) {
+            const nombreInput = elementoRow.querySelector('.nombre-elemento');
+            if (nombreInput) nombreInput.value = elementoData.Nombre;
         }
         
-        // Calcular totales
-        if (window.presupuestosTabla) {
-            window.presupuestosTabla.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
+        // Cargar Alto si existe
+        if (elementoData.Alto !== undefined) {
+            const altoInput = elementoRow.querySelector('.alto');
+            if (altoInput) altoInput.value = elementoData.Alto;
+        }
+        
+        // Cargar Ancho si existe
+        if (elementoData.Ancho !== undefined) {
+            const anchoInput = elementoRow.querySelector('.ancho');
+            if (anchoInput) anchoInput.value = elementoData.Ancho;
+        }
+        
+        // Cargar Precio Unitario si existe
+        if (elementoData.Precio_Unitario !== undefined) {
+            const precioUnitarioInput = elementoRow.querySelector('.precio-unitario');
+            if (precioUnitarioInput) precioUnitarioInput.value = elementoData.Precio_Unitario;
+        }
+        
+        // Cargar Unidades si existe
+        if (elementoData.Unidades !== undefined) {
+            const unidadesInput = elementoRow.querySelector('.unidades');
+            if (unidadesInput) unidadesInput.value = elementoData.Unidades;
+        }
+        
+        // Calcular totales para este elemento
+        if (window.calculadora) {
+            window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
         }
     }
     
