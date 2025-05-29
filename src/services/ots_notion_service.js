@@ -4,6 +4,7 @@ import Notion from './../notion_api/Notion.js'; // Importamos la clase Notion
 import { mapearPresupuestosOT } from "./../mappers/ot.js";
 import { mapearPresupuestosPuntoDeVenta } from "./../mappers/puntos_de_venta.js";
 import { mapearPresupuestosMaterial } from "./../mappers/materiales.js";
+import { mapearPresupuestosClientes } from "./../mappers/clientes.js";
 import { diccionarioCamposNotion } from "./../constantes/constantes.js";
 
 class ots_notion_service {
@@ -63,8 +64,8 @@ class ots_notion_service {
         }
 
 
-        const clienteZoho = this.body.data.data[0];
-        const codigoCliente = "zcrm_"+clienteZoho.Account_Name.id;
+        const clienteZoho = this.body.data.data[0].cliente;
+        const codigoCliente = "zcrm_"+clienteZoho.id;
 
         console.log("Código Cliente: ", codigoCliente);
 
@@ -73,7 +74,7 @@ class ots_notion_service {
         if (clienteId) return clienteId;
 
         console.log("Crear página:");
-        const datosMapeados = mapearPresupuestosOT(clienteZoho);
+        const datosMapeados = mapearPresupuestosClientes(clienteZoho);
         const nuevaOtId = await this.notion.crearPagina("Clientes", datosMapeados);
 
         return nuevaOtId;
