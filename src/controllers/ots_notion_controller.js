@@ -53,6 +53,9 @@ class ots_notion_controller {
       
         // 1. Crear o relacionar la OT (una vez)
         const OTRelacionada = await otsNotionService.siNoExisteOtCrearSinoRelacionar();
+
+        //1.5 Crear o relacionar el Cliente (una vez)
+        const ClienteRelacionado = await otsNotionService.siNoExisteClienteCrearSinoRelacionar();
       
         // 2. Guardamos en el body el código de la OT
         this.body.data.data[0].C_digo = OTRelacionada;
@@ -107,6 +110,7 @@ class ots_notion_controller {
                 const presupuestoData = {
                     "Cliente": "Automatización en curso...",
                     "Foto": pdv?.lineas[0].Fotos || null,
+                    "Clientes": ClienteRelacionado,
                     "Numero de OT": OTRelacionada,
                     "Punto de venta": PuntoDeVentaRelacionado,
                     "Material": materialId,
@@ -136,6 +140,7 @@ class ots_notion_controller {
             message: "OT, puntos de venta y presupuestos procesados correctamente.",
             data: {
               ot_id: OTRelacionada,
+              cliente_id: ClienteRelacionado,
               puntos_de_venta: resultadosPDV,
             },
           };

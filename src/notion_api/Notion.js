@@ -78,6 +78,11 @@ export class Notion {
             rich_text: [{ text: { content: valor.toString() } }],
           };
           break;
+        case "email":
+          properties[campo] = {
+            email: valor ? valor.toString() : null,
+          };
+        break;
         case "date":
           properties[campo] = {
             date: {

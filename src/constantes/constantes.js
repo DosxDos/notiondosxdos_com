@@ -62,7 +62,7 @@ export const diccionarioCamposNotion = {
       "Nº teléfono": "rich_text",                   // Del campo "N_tel_fono"
     },
     
-    Cliente: {
+    Clientes: {
       "Estado de envío": "rich_text",
       "Ciudad de envío": "rich_text",          
       "Nº": "rich_text",
@@ -86,7 +86,7 @@ export const diccionarioCamposNotion = {
       "Contacto relacionado": "rich_text",
       "Teléfono 2": "rich_text",
       "Descuento montaje":"number",
-      "País de facturación": "rich_text",
+      "País de facturación": "select",
       "Domicilio de facturación":"rich_text", 
       "Estado de facturación":"rich_text",
       "Nombre": "title",
@@ -108,7 +108,8 @@ export const diccionarioCamposNotion = {
     Presupuesto: {
       "Cliente": "title",       // ✅ Campo de título principal
       "Foto": "url",                          
-      "Numero de OT": "relation",             
+      "Numero de OT": "relation",
+      "Clientes": "relation",       
       "Isla":"select", 
       "Coste Esc.": "number",                
       "Coste Montaje": "number",           
