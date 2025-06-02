@@ -249,26 +249,58 @@ class PresupuestosTabla {
         // Buscar el elemento existente por ID
         const elementoExistente = this.elementosExistentesDisponibles.find(elem => elem.id === elementoId);
         if (!elementoExistente) return;
-
-        // Actualizar campos con los datos del elemento existente
-        const campos = [
-            { selector: '.alto', propiedad: 'Alto' },
-            { selector: '.ancho', propiedad: 'Ancho' },
-            { selector: '.material', propiedad: 'Material' },
-            { selector: '.precio-unitario', propiedad: 'Precio_Unitario' }
-        ];
         
-        campos.forEach(({ selector, propiedad }) => {
-            const input = elementoRow.querySelector(selector);
-            if (input && elementoExistente[propiedad]) {
-                input.value = elementoExistente[propiedad];
-            }
-        });
+        console.log('Elemento seleccionado:', elementoExistente);
+        
+        // Acceder a los datos originales
+        const datosOriginales = elementoExistente.datosOriginales;
+        
+        // Rellenar el campo concepto con el nombre del elemento (priorizar Nombre_del_elemento)
+        const conceptoInput = elementoRow.querySelector('.concepto');
+        if (conceptoInput) {
+            conceptoInput.value = datosOriginales.Nombre_del_elemento || elementoExistente.Nombre;
+        }
 
-        // Actualizar precio MP después de cambiar el material
-        const materialSelect = elementoRow.querySelector('.material');
-        if (materialSelect) {
-            window.calculadora.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex);
+        // Actualizar alto y ancho con los valores específicos del elemento
+        const altoInput = elementoRow.querySelector('.alto');
+        if (altoInput) {
+            altoInput.value = datosOriginales.Alto_del_elemento || elementoExistente.Alto || '';
+        }
+        
+        const anchoInput = elementoRow.querySelector('.ancho');
+        if (anchoInput) {
+            anchoInput.value = datosOriginales.Ancho_del_elemento || elementoExistente.Ancho || '';
+        }
+        
+        // Actualizar material si existe
+        const materialInput = elementoRow.querySelector('.material');
+        if (materialInput && elementoExistente.Material) {
+            materialInput.value = elementoExistente.Material;
+        }
+
+        // Manejar el precio del material si existe
+        const precioMP = elementoRow.querySelector('.precio-mp');
+        if (precioMP) {
+            // Intentar obtener el precio del material desde los datos originales
+            const datosMaterial = datosOriginales.elemento_de_escaparate?.materiales?.[0];
+            if (datosMaterial && datosMaterial.Precio) {
+                precioMP.value = datosMaterial.Precio;
+            } else {
+                // Si no existe, intentar actualizar desde calculadora
+                window.calculadora.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex);
+            }
+        }
+
+        // Actualizar precio unitario si existe
+        const precioUnitario = elementoRow.querySelector('.precio-unitario');
+        if (precioUnitario && elementoExistente.Precio_Unitario) {
+            precioUnitario.value = elementoExistente.Precio_Unitario;
+        }
+        
+        // Actualizar unidades si existe el campo en los datos originales
+        const unidadesInput = elementoRow.querySelector('.unidades');
+        if (unidadesInput && datosOriginales.Unidades) {
+            unidadesInput.value = datosOriginales.Unidades;
         }
 
         // Recalcular totales
@@ -281,7 +313,33 @@ class PresupuestosTabla {
      */
     generarOpcionesElementosExistentes() {
         return this.elementosExistentesDisponibles
-            .map(elem => `<option value="${elem.id}">${elem.Nombre || elem.Name || elem.name || 'Elemento sin nombre'}</option>`)
+            .map(elem => {
+                // Obtener datos originales para información más precisa
+                const original = elem.datosOriginales || elem;
+                
+                // Usar Nombre_del_elemento como descripción principal
+                let descripcion = original.Nombre_del_elemento || elem.Nombre;
+                
+                // Añadir el nombre del escaparate si existe y es diferente
+                if (original.Nombre_del_escaparate && original.Nombre_del_escaparate !== descripcion) {
+                    descripcion += ` (${original.Nombre_del_escaparate})`;
+                }
+                
+                // Añadir dimensiones específicas del elemento
+                const alto = original.Alto_del_elemento || elem.Alto;
+                const ancho = original.Ancho_del_elemento || elem.Ancho;
+                
+                if (alto && ancho) {
+                    descripcion += ` - ${alto}x${ancho}`;
+                }
+                
+                // Añadir material si existe
+                if (elem.Material) {
+                    descripcion += ` - ${elem.Material}`;
+                }
+                
+                return `<option value="${elem.id}">${descripcion}</option>`;
+            })
             .join('');
     }
 
@@ -295,12 +353,34 @@ class PresupuestosTabla {
                 return;
             }
             
-            this.elementosExistentesDisponibles = await window.apiServices.obtenerElementosExistentes();
+            // Obtener elementos desde Zoho
+            const elementosZoho = await window.apiServices.obtenerElementosExistentes();
+            console.log('Elementos cargados:', elementosZoho);
+            
+            // Procesar los elementos para tener un formato uniforme
+            this.elementosExistentesDisponibles = elementosZoho.map(elem => {
+                return {
+                    id: elem.id,
+                    // Usar el Nombre_del_elemento como prioridad para el nombre
+                    Nombre: elem.Nombre_del_elemento || elem.Nombre_del_escaparate || elem.Name || elem.name || 'Elemento sin nombre',
+                    // Usar las dimensiones específicas del elemento
+                    Alto: elem.Alto_del_elemento || elem.Alto_del_Suelo || elem.Superior || elem.Alto || '',
+                    Ancho: elem.Ancho_del_elemento || elem.Ancho_del_Suelo || elem.Inferior || elem.Ancho || '',
+                    // Verificar si hay materiales en elemento_de_escaparate
+                    Material: elem.elemento_de_escaparate?.materiales?.[0]?.Material || elem.Material || '',
+                    Precio_Unitario: elem.Precio_Unitario || '',
+                    // Guardar la referencia completa por si necesitamos más datos
+                    datosOriginales: elem
+                };
+            });
+            
+            console.log('Elementos procesados:', this.elementosExistentesDisponibles);
             
             // Actualizar los selects existentes si hubiera alguno ya en la página
             this.actualizarSelectsElementosExistentes();
         } catch (error) {
             console.error('Error al cargar elementos existentes:', error);
+            this.elementosExistentesDisponibles = [];
         }
     }
     

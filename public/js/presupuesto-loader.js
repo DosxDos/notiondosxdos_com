@@ -126,8 +126,8 @@ class PresupuestoLoader {
         
         // Cargar escaparates si existen
         if (pdvData.escaparates && pdvData.escaparates.length > 0) {
-            // Desplegar automáticamente la sección de escaparates si hay datos
-            this.desplegarEscaparatesSiHayDatos(pdvDiv, pdvIndex);
+            // Los escaparates permanecen ocultos por defecto aunque haya datos
+            // El usuario debe hacer clic en "Desplegar escaparates" para verlos
             
             pdvData.escaparates.forEach((escaparate, escaparateIndex) => {
                 this.agregarYCargarEscaparate(pdvIndex, escaparate, escaparateIndex);
@@ -137,25 +137,6 @@ class PresupuestoLoader {
         // Recalcular totales del PDV usando el servicio de calculadora
         if (window.calculadora) {
             window.calculadora.actualizarTotalPDV(pdvIndex);
-        }
-    }
-    
-    desplegarEscaparatesSiHayDatos(pdvDiv, pdvIndex) {
-        const toggleEscaparatesBtn = pdvDiv.querySelector('.toggle-escaparates');
-        if (!toggleEscaparatesBtn) return;
-        
-        const escaparatesContainer = pdvDiv.querySelector('.escaparates-container');
-        if (!escaparatesContainer) return;
-        
-        // Desplegar la sección de escaparates
-        escaparatesContainer.classList.remove('hidden');
-        toggleEscaparatesBtn.setAttribute('aria-expanded', 'true');
-        toggleEscaparatesBtn.querySelector('span').textContent = 'Colapsar escaparates';
-        
-        // Rotar el icono
-        const toggleIcon = toggleEscaparatesBtn.querySelector('.toggle-icon');
-        if (toggleIcon) {
-            toggleIcon.classList.add('transform', 'rotate-180');
         }
     }
     
@@ -223,65 +204,97 @@ class PresupuestoLoader {
             const nombreInput = escaparateItem.querySelector('.nombre-escaparate');
             if (nombreInput) nombreInput.value = escaparateData.Nombre_del_escaparate;
         }
+
+        // Verificar si hay un elemento asociado al escaparate
+        if (escaparateData.elemento_de_escaparate) {
+            // Guardamos la referencia para usarla al cargar los elementos
+            escaparateItem.dataset.tieneElemento = 'true';
+            escaparateItem.dataset.elementoId = escaparateData.elemento_de_escaparate.id;
+        }
     }
     
     cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData) {
-        if (!escaparateData.elementos || !Array.isArray(escaparateData.elementos)) return;
-        
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-        
-        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-        if (!escaparateItem) return;
-        
-        const elementosContainer = escaparateItem.querySelector('.elementos-container');
-        if (!elementosContainer) return;
-        
-        // Obtener elementos existentes
-        const elementosExistentes = elementosContainer.querySelectorAll('tr');
-        
-        // Si no hay suficientes filas, agregar las necesarias
-        while (elementosExistentes.length < escaparateData.elementos.length) {
-            if (window.presupuestosTabla) {
-                window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
+        // Si hay elementos en la respuesta, usamos esos
+        if (escaparateData.elementos && Array.isArray(escaparateData.elementos)) {
+            const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+            if (!pdvDiv) return;
+            
+            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
+            if (!escaparateItem) return;
+            
+            const elementosContainer = escaparateItem.querySelector('.elementos-container');
+            if (!elementosContainer) return;
+            
+            // Obtener elementos existentes
+            const elementosExistentes = elementosContainer.querySelectorAll('tr');
+            
+            // Si no hay suficientes filas, agregar las necesarias
+            while (elementosExistentes.length < escaparateData.elementos.length) {
+                if (window.presupuestosTabla) {
+                    window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
+                }
             }
-        }
-        
-        // Obtener la lista actualizada de elementos
-        const elementosRows = elementosContainer.querySelectorAll('tr');
-        
-        // Cargar datos en cada fila
-        escaparateData.elementos.forEach((elemento, elementoIndex) => {
-            if (elementoIndex < elementosRows.length) {
-                this.cargarDatosElemento(elementosRows[elementoIndex], elemento, pdvIndex, escaparateIndex);
+            
+            // Obtener la lista actualizada de elementos
+            const elementosRows = elementosContainer.querySelectorAll('tr');
+            
+            // Cargar datos en cada fila
+            escaparateData.elementos.forEach((elemento, elementoIndex) => {
+                if (elementoIndex < elementosRows.length) {
+                    this.cargarDatosElemento(elementosRows[elementoIndex], elemento, pdvIndex, escaparateIndex);
+                }
+            });
+            
+            // Actualizar totales
+            if (window.calculadora) {
+                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
             }
-        });
-        
-        // Actualizar totales
-        if (window.calculadora) {
-            window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+        } 
+        // Si no hay elementos definidos pero hay un elemento_de_escaparate, usamos ese
+        else if (escaparateData.elemento_de_escaparate) {
+            const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+            if (!pdvDiv) return;
+            
+            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
+            if (!escaparateItem) return;
+            
+            const elementosContainer = escaparateItem.querySelector('.elementos-container');
+            if (!elementosContainer) return;
+            
+            // Asegurarnos de que haya al menos una fila de elemento
+            if (elementosContainer.querySelectorAll('tr').length === 0) {
+                if (window.presupuestosTabla) {
+                    window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
+                }
+            }
+            
+            // Obtener la primera fila
+            const elementoRow = elementosContainer.querySelector('tr');
+            if (elementoRow) {
+                // Crear un objeto con los datos del elemento_de_escaparate
+                const elementoData = {
+                    Nombre: escaparateData.Name || escaparateData.Nombre_del_escaparate || '',
+                    Alto: /* escaparateData.Superior || */ escaparateData.Alto_del_Suelo || '',
+                    Ancho: /* escaparateData.Inferior || */ escaparateData.Ancho_del_Suelo || '',
+                    Elemento: escaparateData.elemento_de_escaparate
+                };
+                
+                // Cargar los datos en la fila
+                this.cargarDatosElemento(elementoRow, elementoData, pdvIndex, escaparateIndex);
+            }
+            
+            // Actualizar totales
+            if (window.calculadora) {
+                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+            }
         }
     }
     
     cargarDatosElemento(elementoRow, elementoData, pdvIndex, escaparateIndex) {
-        // Cargar Material si existe
-        if (elementoData.Material) {
-            const materialSelect = elementoRow.querySelector('.material');
-            if (materialSelect) {
-                materialSelect.value = elementoData.Material;
-                
-                // Actualizar precio materia prima
-                const precioMP = elementoRow.querySelector('.precio-mp');
-                if (precioMP && window.calculadora && window.calculadora.materialesDisponibles) {
-                    precioMP.value = window.calculadora.materialesDisponibles[elementoData.Material] || '';
-                }
-            }
-        }
-        
-        // Cargar Nombre si existe
+        // Cargar concepto (Nombre) si existe
         if (elementoData.Nombre) {
-            const nombreInput = elementoRow.querySelector('.nombre-elemento');
-            if (nombreInput) nombreInput.value = elementoData.Nombre;
+            const conceptoInput = elementoRow.querySelector('.concepto');
+            if (conceptoInput) conceptoInput.value = elementoData.Nombre;
         }
         
         // Cargar Alto si existe
@@ -294,6 +307,36 @@ class PresupuestoLoader {
         if (elementoData.Ancho !== undefined) {
             const anchoInput = elementoRow.querySelector('.ancho');
             if (anchoInput) anchoInput.value = elementoData.Ancho;
+        }
+
+        // Cargar Material y Precio/M.Prima si existe elemento con materiales
+        if (elementoData.Elemento && elementoData.Elemento.materiales && elementoData.Elemento.materiales.length > 0) {
+            const material = elementoData.Elemento.materiales[0]; // Tomamos el primer material
+            
+            // Cargar el Material
+            const materialSelect = elementoRow.querySelector('.material');
+            if (materialSelect && material.Material) {
+                materialSelect.value = material.Material;
+            }
+            
+            // Cargar el Precio/M.Prima
+            const precioMPInput = elementoRow.querySelector('.precio-mp');
+            if (precioMPInput && material.Precio) {
+                precioMPInput.value = material.Precio;
+            }
+        }
+        // Si el material viene en el formato tradicional
+        else if (elementoData.Material) {
+            const materialSelect = elementoRow.querySelector('.material');
+            if (materialSelect) {
+                materialSelect.value = elementoData.Material;
+                
+                // Actualizar precio materia prima
+                const precioMP = elementoRow.querySelector('.precio-mp');
+                if (precioMP && window.calculadora && window.calculadora.materialesDisponibles) {
+                    precioMP.value = window.calculadora.materialesDisponibles[elementoData.Material] || '';
+                }
+            }
         }
         
         // Cargar Precio Unitario si existe

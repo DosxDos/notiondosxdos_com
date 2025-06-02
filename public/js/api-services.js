@@ -101,9 +101,10 @@ class ApiServices {
      */
     async obtenerElementosExistentes() {
         try {
-            // Este endpoint debe ser reemplazado con el real cuando esté disponible
-            const response = await this.fetchWithAuth('/api/elementosExistentes');
-            return response.elementos || [];
+            // Usar obtenerDatosModuloZoho de manera similar a obtenerPuntosDeVenta
+            // Asumimos que el módulo se llama "Elementos_Escaparate" o algo similar
+            const response = await this.obtenerDatosModuloZoho('ElementosDeEscaparates');
+            return response.proveedores || [];
         } catch (error) {
             console.error('Error al obtener elementos existentes:', error);
             // Devolver un array vacío en caso de error para evitar fallos en la UI
