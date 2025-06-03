@@ -139,6 +139,13 @@ class PresupuestosTabla {
 
         // Inicializar eventos para el nuevo elemento usando EventHandlers
         window.EventHandlers.initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex);
+        
+        // Inicializar cálculos automáticamente cuando se agrega un nuevo elemento manualmente
+        setTimeout(() => {
+            if (window.calculadora) {
+                window.calculadora.calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex);
+            }
+        }, 50);
     }
 
     async cargarMateriales() {
@@ -218,22 +225,35 @@ class PresupuestosTabla {
         // Usar TableUtils para encontrar los elementos necesarios
         const { elementosContainer } = window.TableUtils.encontrarElementos(pdvIndex, escaparateIndex);
         if (!elementosContainer) return;
+        
+        // Generar opciones de conceptos solo si hay elementos disponibles
+        if (!this.elementosExistentesDisponibles.length) {
+            console.warn('No hay elementos existentes disponibles para agregar');
+            return;
+        }
 
         const elementoRow = document.createElement('tr');
-        elementoRow.innerHTML = window.Templates.generarTemplateElementoExistente(
-            true, 
+        elementoRow.innerHTML = window.generarTemplateElementoExistente(
+            true,
             this.generarOpcionesMateriales.bind(this),
             this.generarOpcionesElementosExistentes.bind(this)
         );
         elementosContainer.appendChild(elementoRow);
 
-        // Inicializar eventos para el nuevo elemento usando EventHandlers
+        // Inicializar eventos para elementos existentes
         window.EventHandlers.initializeElementoExistenteEvents(
             elementoRow, 
             pdvIndex, 
             escaparateIndex, 
             this.actualizarCamposDesdeElementoExistente.bind(this)
         );
+        
+        // Inicializar cálculos automáticamente cuando se agrega un elemento existente
+        setTimeout(() => {
+            if (window.calculadora) {
+                window.calculadora.calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex);
+            }
+        }, 50);
     }
 
     /**
@@ -318,25 +338,7 @@ class PresupuestosTabla {
                 const original = elem.datosOriginales || elem;
                 
                 // Usar Nombre_del_elemento como descripción principal
-                let descripcion = original.Nombre_del_elemento || elem.Nombre;
-                
-                // Añadir el nombre del escaparate si existe y es diferente
-                if (original.Nombre_del_escaparate && original.Nombre_del_escaparate !== descripcion) {
-                    descripcion += ` (${original.Nombre_del_escaparate})`;
-                }
-                
-                // Añadir dimensiones específicas del elemento
-                const alto = original.Alto_del_elemento || elem.Alto;
-                const ancho = original.Ancho_del_elemento || elem.Ancho;
-                
-                if (alto && ancho) {
-                    descripcion += ` - ${alto}x${ancho}`;
-                }
-                
-                // Añadir material si existe
-                if (elem.Material) {
-                    descripcion += ` - ${elem.Material}`;
-                }
+                let descripcion = original.Nombre_del_elemento || elem.Nombre;      
                 
                 return `<option value="${elem.id}">${descripcion}</option>`;
             })
@@ -357,12 +359,29 @@ class PresupuestosTabla {
             const elementosZoho = await window.apiServices.obtenerElementosExistentes();
             console.log('Elementos cargados:', elementosZoho);
             
+            // Mostrar los nombres originales de los elementos para depuración
+            elementosZoho.forEach(elem => {
+                console.log(`Elemento ID ${elem.id}:`, {
+                    'name': elem.name,
+                    'Name': elem.Name,
+                    'Nombre_del_elemento': elem.Nombre_del_elemento,
+                    'Nombre_del_escaparate': elem.Nombre_del_escaparate
+                });
+            });
+            
             // Procesar los elementos para tener un formato uniforme
             this.elementosExistentesDisponibles = elementosZoho.map(elem => {
+                // Determinar el mejor nombre para el elemento
+                const nombreElemento = elem.Nombre_del_elemento || 
+                                       elem.Nombre_del_escaparate || 
+                                       elem.Name || 
+                                       elem.name || 
+                                       'Elemento sin nombre';
+                
                 return {
                     id: elem.id,
                     // Usar el Nombre_del_elemento como prioridad para el nombre
-                    Nombre: elem.Nombre_del_elemento || elem.Nombre_del_escaparate || elem.Name || elem.name || 'Elemento sin nombre',
+                    Nombre: nombreElemento,
                     // Usar las dimensiones específicas del elemento
                     Alto: elem.Alto_del_elemento || elem.Alto_del_Suelo || elem.Superior || elem.Alto || '',
                     Ancho: elem.Ancho_del_elemento || elem.Ancho_del_Suelo || elem.Inferior || elem.Ancho || '',

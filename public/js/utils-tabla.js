@@ -184,13 +184,31 @@ class EventHandlers {
             material.addEventListener('change', () => window.calculadora.actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex));
         }
 
-        // Eventos para cálculos automáticos
-        ['alto', 'ancho', 'precio-unitario', 'unidades'].forEach(className => {
+        // Eventos para actualizar precio unitario automáticamente
+        ['alto', 'ancho', 'precio-mp'].forEach(className => {
             const input = elementoRow.querySelector(`.${className}`);
             if (input) {
-                input.addEventListener('input', () => window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex));
+                input.addEventListener('input', () => window.calculadora.calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex));
             }
         });
+        
+        // Eventos para cálculos de totales
+        const unidadesInput = elementoRow.querySelector('.unidades');
+        if (unidadesInput) {
+            unidadesInput.addEventListener('input', () => window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex));
+        }
+        
+        // Evento para actualizar totales si se modifica manualmente el precio unitario
+        const precioUnitarioInput = elementoRow.querySelector('.precio-unitario');
+        if (precioUnitarioInput) {
+            precioUnitarioInput.addEventListener('input', () => window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex));
+        }
+        
+        // Evento para actualizar totales si se modifica manualmente el total del elemento
+        const totalElementoInput = elementoRow.querySelector('.total-elemento');
+        if (totalElementoInput) {
+            totalElementoInput.addEventListener('input', () => window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex));
+        }
         
         // Botón para eliminar elemento
         const eliminarBtn = elementoRow.querySelector('.eliminar-elemento');
@@ -260,6 +278,24 @@ class EventHandlers {
                 // Posible lógica para manejar cambios en el nombre
             });
         }
+        
+        // Evento para actualizar totales si se modifica manualmente el total del escaparate
+        const totalEscaparateInput = escaparateItem.querySelector('.total-escaparate');
+        if (totalEscaparateInput) {
+            totalEscaparateInput.addEventListener('input', () => window.calculadora.actualizarTotalPDV(pdvIndex));
+        }
+        
+        // Evento para actualizar totales si se modifica manualmente el total en el footer
+        const totalElementosInput = escaparateItem.querySelector('.total-elementos');
+        if (totalElementosInput) {
+            totalElementosInput.addEventListener('input', () => {
+                // Actualizar el total del escaparate en el header
+                if (totalEscaparateInput) {
+                    totalEscaparateInput.value = totalElementosInput.value;
+                }
+                window.calculadora.actualizarTotalPDV(pdvIndex);
+            });
+        }
     }
     
     /**
@@ -317,6 +353,17 @@ class EventHandlers {
         const montagePdv = pdvDiv.querySelector('.montaje-pdv');
         if (montagePdv) {
             montagePdv.addEventListener('input', () => window.calculadora.actualizarTotalPDV(pdvIndex));
+        }
+        
+        // Eventos para actualizar totales si se modifican manualmente los totales del PDV
+        const totalEscaparatesPdv = pdvDiv.querySelector('.total-escaparates-pdv');
+        if (totalEscaparatesPdv) {
+            totalEscaparatesPdv.addEventListener('input', () => window.calculadora.recalcularTotales());
+        }
+        
+        const totalPdv = pdvDiv.querySelector('.total-pdv');
+        if (totalPdv) {
+            totalPdv.addEventListener('input', () => window.calculadora.recalcularTotales());
         }
 
         // Botón para desplegar/colapsar escaparates

@@ -20,8 +20,26 @@ class Calculadora {
         if (material && precioMP) {
             const materialSeleccionado = material.value;
             precioMP.value = this.materialesDisponibles[materialSeleccionado] || '';
-            this.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
+            this.calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex);
         }
+    }
+
+    /**
+     * Calcula el precio unitario basado en dimensiones y precio MP
+     * @param {Element} elementoRow - Fila del elemento
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     */
+    calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex) {
+        const alto = parseFloat(elementoRow.querySelector('.alto').value.replace(',', '.')) || 0;
+        const ancho = parseFloat(elementoRow.querySelector('.ancho').value.replace(',', '.')) || 0;
+        const precioMP = parseFloat(elementoRow.querySelector('.precio-mp').value.replace(',', '.')) || 0;
+        
+        // Calcular precio unitario como (alto/100 * ancho/100) * precioMP
+        const precioUnitario = ((alto / 100) * (ancho / 100) * precioMP).toFixed(2);
+        elementoRow.querySelector('.precio-unitario').value = precioUnitario;
+        
+        this.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
     }
 
     /**
@@ -31,12 +49,10 @@ class Calculadora {
      * @param {number} escaparateIndex - Índice del escaparate
      */
     calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex) {
-        const alto = parseFloat(elementoRow.querySelector('.alto').value) || 0;
-        const ancho = parseFloat(elementoRow.querySelector('.ancho').value) || 0;
-        const precioUnitario = parseFloat(elementoRow.querySelector('.precio-unitario').value) || 0;
-        const unidades = parseInt(elementoRow.querySelector('.unidades').value) || 1;
+        const precioUnitario = parseFloat(elementoRow.querySelector('.precio-unitario').value.replace(',', '.')) || 0;
+        const unidades = parseInt(elementoRow.querySelector('.unidades').value.replace(',', '.')) || 1;
 
-        const total = (alto * ancho * precioUnitario * unidades).toFixed(2);
+        const total = (precioUnitario * unidades).toFixed(2);
         elementoRow.querySelector('.total-elemento').value = total;
 
         this.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
@@ -55,7 +71,7 @@ class Calculadora {
         if (!escaparateItem) return;
 
         const totales = Array.from(escaparateItem.querySelectorAll('.total-elemento'))
-            .map(input => parseFloat(input.value) || 0);
+            .map(input => parseFloat(input.value.replace(',', '.')) || 0);
         
         const totalEscaparate = totales.reduce((sum, value) => sum + value, 0).toFixed(2);
         
@@ -84,12 +100,12 @@ class Calculadora {
 
         // Sumar totales de todos los escaparates
         const totalesEscaparates = Array.from(pdvDiv.querySelectorAll('.total-escaparate'))
-            .map(input => parseFloat(input.value) || 0);
+            .map(input => parseFloat(input.value.replace(',', '.')) || 0);
         
         const totalEscaparates = totalesEscaparates.reduce((sum, value) => sum + value, 0);
         
         // Obtener valor del montaje
-        const montaje = parseFloat(pdvDiv.querySelector('.montaje-pdv').value) || 0;
+        const montaje = parseFloat(pdvDiv.querySelector('.montaje-pdv').value.replace(',', '.')) || 0;
         
         // Calcular total del PDV (escaparates + montaje)
         const totalPDV = (totalEscaparates + montaje).toFixed(2);
@@ -114,7 +130,7 @@ class Calculadora {
     recalcularTotales() {
         // Calcular el total general sumando todos los totales de PDV
         const totalesPDV = Array.from(document.querySelectorAll('.total-pdv'))
-            .map(input => parseFloat(input.value) || 0);
+            .map(input => parseFloat(input.value.replace(',', '.')) || 0);
         
         const totalGeneral = totalesPDV.reduce((sum, value) => sum + value, 0).toFixed(2);
         
@@ -123,6 +139,37 @@ class Calculadora {
         if (totalGeneralInput) {
             totalGeneralInput.value = totalGeneral;
         }
+    }
+
+    /**
+     * Inicializa los cálculos para todos los elementos de la página
+     * Recalcula automáticamente precios unitarios y totales sin necesidad de modificar los campos
+     */
+    inicializarCalculos() {
+        // Procesar cada PDV
+        document.querySelectorAll('.tabla-pdv').forEach(pdvDiv => {
+            const pdvIndex = parseInt(pdvDiv.dataset.pdvIndex);
+            
+            // Procesar cada escaparate dentro del PDV
+            pdvDiv.querySelectorAll('.escaparate-item').forEach(escaparateItem => {
+                const escaparateIndex = parseInt(escaparateItem.dataset.escaparateIndex);
+                
+                // Procesar cada elemento del escaparate
+                escaparateItem.querySelectorAll('.elemento-escaparate').forEach(elementoRow => {
+                    // Calcular precio unitario basado en las dimensiones y precio MP actuales
+                    this.calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex);
+                });
+                
+                // Actualizar total del escaparate
+                this.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+            });
+            
+            // Actualizar total del PDV
+            this.actualizarTotalPDV(pdvIndex);
+        });
+        
+        // Actualizar total general
+        this.recalcularTotales();
     }
 
     /**

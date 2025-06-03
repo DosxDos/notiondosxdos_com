@@ -1,0 +1,349 @@
+/**
+ * Módulo para manejar el envío de datos del presupuesto al backend
+ * Se encarga de recopilar todos los datos del formulario y enviarlos al servidor
+ */
+
+class PresupuestoSubmit {
+    constructor() {
+        this.init();
+    }
+
+    /**
+     * Inicializa el módulo y agrega los event listeners
+     */
+    init() {
+        // Añadir event listener al botón de generar PDF cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+        } else {
+            this.setupEventListeners();
+        }
+    }
+
+    /**
+     * Configura los event listeners necesarios
+     */
+    setupEventListeners() {
+        const generarPdfBtn = document.getElementById('generar-pdf');
+        if (generarPdfBtn) {
+            generarPdfBtn.addEventListener('click', () => this.handleGenerarPDF());
+        }
+    }
+
+    /**
+     * Maneja el evento de clic en el botón "Generar PDF"
+     */
+    async handleGenerarPDF() {
+        try {
+            // Mostrar indicador de carga
+            if (window.spinner) {
+                window.spinner.show();
+            }
+
+            // Recopilar todos los datos del formulario
+            const datosCompletos = this.recopilarDatosFormulario();
+            
+            console.log('Datos recopilados para enviar:', datosCompletos);
+            
+            // Enviar los datos al backend y recibir el PDF como Blob
+            const pdfBlob = await this.enviarDatosAlBackend(datosCompletos);
+            
+            // Crear una URL para el blob
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            
+            // Mostrar mensaje de éxito
+            alert('El PDF se ha generado correctamente');
+            
+            // Abrir el PDF en una nueva pestaña
+            window.open(pdfUrl, '_blank');
+            
+        } catch (error) {
+            console.error('Error completo al generar el PDF:', error);
+            alert(`Error al generar el PDF: ${error.message}`);
+        } finally {
+            // Ocultar indicador de carga
+            if (window.spinner) {
+                window.spinner.hide();
+            }
+        }
+    }
+
+    /**
+     * Recopila todos los datos del formulario
+     * @returns {Object} Objeto con todos los datos del presupuesto
+     */
+    recopilarDatosFormulario() {
+        // Si no hay datos previos cargados, crear un objeto nuevo
+        if (!window.presupuestoLoader || !window.presupuestoLoader.datosPresupuesto) {
+            console.error('No hay datos de presupuesto cargados');
+            return { puntos_de_venta: [] };
+        }
+
+        // Partir de los datos originales del presupuesto
+        const datosOriginales = window.presupuestoLoader.datosPresupuesto;
+        
+        // Crear una copia para no modificar los datos originales
+        const datosActualizados = { ...datosOriginales };
+        
+        // Actualizar la lista de puntos de venta con los datos actuales del formulario
+        datosActualizados.puntos_de_venta = this.recopilarDatosPDVs();
+        
+        // Obtener el código de OT desde la URL
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        const codigoOT = pathParts[pathParts.length - 1];
+        
+        // Asegurarse de que el código OT esté en los datos
+        if (codigoOT) {
+            datosActualizados.C_digo = codigoOT;
+        }
+        
+        return datosActualizados;
+    }
+
+    /**
+     * Recopila los datos de todos los PDVs en el formulario
+     * @returns {Array} Array con los datos de todos los PDVs
+     */
+    recopilarDatosPDVs() {
+        const puntosDeVenta = [];
+        const pdvDivs = document.querySelectorAll('.tabla-pdv');
+        
+        pdvDivs.forEach((pdvDiv, index) => {
+            const pdvData = this.recopilarDatosPDV(pdvDiv, index);
+            puntosDeVenta.push(pdvData);
+        });
+        
+        return puntosDeVenta;
+    }
+
+    /**
+     * Recopila los datos de un PDV específico
+     * @param {Element} pdvDiv - Elemento DOM que contiene los datos del PDV
+     * @param {number} index - Índice del PDV
+     * @returns {Object} Objeto con los datos del PDV
+     */
+    recopilarDatosPDV(pdvDiv, index) {
+        // Obtener datos originales del PDV si existen
+        let pdvData = {};
+        if (window.presupuestoLoader && 
+            window.presupuestoLoader.datosPresupuesto && 
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta && 
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta[index]) {
+            pdvData = { ...window.presupuestoLoader.datosPresupuesto.puntos_de_venta[index] };
+        }
+        
+        // Actualizar datos generales del PDV
+        // Montaje
+        const montajePdv = pdvDiv.querySelector('.montaje-pdv');
+        if (montajePdv) {
+            pdvData.Montaje = parseFloat(montajePdv.value) || 0;
+        }
+        
+        // Isla
+        const islaPdv = pdvDiv.querySelector('.isla-pdv');
+        if (islaPdv) {
+            pdvData.Isla = islaPdv.value;
+        }
+        
+        // OBS
+        const obsPdv = pdvDiv.querySelector('.obs-pdv');
+        if (obsPdv) {
+            pdvData.OBS = obsPdv.value;
+        }
+        
+        // Total escaparates
+        const totalEscaparatesPdv = pdvDiv.querySelector('.total-escaparates-pdv');
+        if (totalEscaparatesPdv) {
+            pdvData.Total_Escaparates = parseFloat(totalEscaparatesPdv.value) || 0;
+        }
+        
+        // Total PDV
+        const totalPdv = pdvDiv.querySelector('.total-pdv');
+        if (totalPdv) {
+            pdvData.Total_PDV = parseFloat(totalPdv.value) || 0;
+        }
+        
+        // Recopilar escaparates
+        pdvData.escaparates = this.recopilarDatosEscaparates(pdvDiv, index);
+        
+        return pdvData;
+    }
+
+    /**
+     * Recopila los datos de todos los escaparates de un PDV
+     * @param {Element} pdvDiv - Elemento DOM que contiene los datos del PDV
+     * @param {number} pdvIndex - Índice del PDV
+     * @returns {Array} Array con los datos de todos los escaparates
+     */
+    recopilarDatosEscaparates(pdvDiv, pdvIndex) {
+        const escaparates = [];
+        const escaparateItems = pdvDiv.querySelectorAll('.escaparate-item');
+        
+        escaparateItems.forEach((escaparateItem, escaparateIndex) => {
+            const escaparateData = this.recopilarDatosEscaparate(escaparateItem, pdvIndex, escaparateIndex);
+            escaparates.push(escaparateData);
+        });
+        
+        return escaparates;
+    }
+
+    /**
+     * Recopila los datos de un escaparate específico
+     * @param {Element} escaparateItem - Elemento DOM que contiene los datos del escaparate
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     * @returns {Object} Objeto con los datos del escaparate
+     */
+    recopilarDatosEscaparate(escaparateItem, pdvIndex, escaparateIndex) {
+        // Obtener datos originales del escaparate si existen
+        let escaparateData = {};
+        if (window.presupuestoLoader && 
+            window.presupuestoLoader.datosPresupuesto && 
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta && 
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta[pdvIndex] &&
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta[pdvIndex].escaparates &&
+            window.presupuestoLoader.datosPresupuesto.puntos_de_venta[pdvIndex].escaparates[escaparateIndex]) {
+            escaparateData = { ...window.presupuestoLoader.datosPresupuesto.puntos_de_venta[pdvIndex].escaparates[escaparateIndex] };
+        }
+        
+        // Actualizar datos del escaparate
+        // Nombre del escaparate
+        const nombreEscaparate = escaparateItem.querySelector('.nombre-escaparate');
+        if (nombreEscaparate) {
+            escaparateData.Nombre_del_escaparate = nombreEscaparate.value;
+            // También actualizar Name para mantener consistencia
+            escaparateData.Name = nombreEscaparate.value;
+        }
+        
+        // Tipo de escaparate
+        const tipoEscaparate = escaparateItem.querySelector('.tipo-escaparate');
+        if (tipoEscaparate) {
+            escaparateData.Tipo_de_escaparate = tipoEscaparate.value;
+        }
+        
+        // Total escaparate
+        const totalEscaparate = escaparateItem.querySelector('.total-escaparate');
+        if (totalEscaparate) {
+            escaparateData.Total_Escaparate = parseFloat(totalEscaparate.value) || 0;
+        }
+        
+        // Recopilar elementos del escaparate
+        escaparateData.elementos = this.recopilarDatosElementos(escaparateItem, pdvIndex, escaparateIndex);
+        
+        return escaparateData;
+    }
+
+    /**
+     * Recopila los datos de todos los elementos de un escaparate
+     * @param {Element} escaparateItem - Elemento DOM que contiene los datos del escaparate
+     * @param {number} pdvIndex - Índice del PDV
+     * @param {number} escaparateIndex - Índice del escaparate
+     * @returns {Array} Array con los datos de todos los elementos
+     */
+    recopilarDatosElementos(escaparateItem, pdvIndex, escaparateIndex) {
+        const elementos = [];
+        const elementosRows = escaparateItem.querySelectorAll('.elemento-escaparate');
+        
+        elementosRows.forEach((elementoRow, elementoIndex) => {
+            const elementoData = this.recopilarDatosElemento(elementoRow);
+            elementos.push(elementoData);
+        });
+        
+        return elementos;
+    }
+
+    /**
+     * Recopila los datos de un elemento específico
+     * @param {Element} elementoRow - Elemento DOM que contiene los datos del elemento
+     * @returns {Object} Objeto con los datos del elemento
+     */
+    recopilarDatosElemento(elementoRow) {
+        const elementoData = {};
+        
+        // Concepto
+        const concepto = elementoRow.querySelector('.concepto');
+        if (concepto) {
+            elementoData.Nombre_del_elemento = concepto.value;
+        }
+        
+        // Alto
+        const alto = elementoRow.querySelector('.alto');
+        if (alto) {
+            elementoData.Alto = parseFloat(alto.value.replace(',', '.')) || 0;
+        }
+        
+        // Ancho
+        const ancho = elementoRow.querySelector('.ancho');
+        if (ancho) {
+            elementoData.Ancho = parseFloat(ancho.value.replace(',', '.')) || 0;
+        }
+        
+        // Material
+        const material = elementoRow.querySelector('.material');
+        if (material) {
+            elementoData.Material = material.value;
+        }
+        
+        // Precio/M.Prima
+        const precioMP = elementoRow.querySelector('.precio-mp');
+        if (precioMP) {
+            elementoData.Precio_MP = parseFloat(precioMP.value.replace(',', '.')) || 0;
+        }
+        
+        // Precio Unitario
+        const precioUnitario = elementoRow.querySelector('.precio-unitario');
+        if (precioUnitario) {
+            elementoData.Precio_Unitario = parseFloat(precioUnitario.value.replace(',', '.')) || 0;
+        }
+        
+        // Unidades
+        const unidades = elementoRow.querySelector('.unidades');
+        if (unidades) {
+            elementoData.Unidades = parseInt(unidades.value) || 1;
+        }
+        
+        // Total elemento
+        const totalElemento = elementoRow.querySelector('.total-elemento');
+        if (totalElemento) {
+            elementoData.Total = parseFloat(totalElemento.value.replace(',', '.')) || 0;
+        }
+        
+        return elementoData;
+    }
+
+    /**
+     * Envía los datos recopilados al backend
+     * @param {Object} datos - Datos completos del presupuesto
+     * @returns {Promise<Blob>} PDF generado como Blob
+     */
+    async enviarDatosAlBackend(datos) {
+        if (!window.apiServices) {
+            throw new Error('ApiServices no está disponible');
+        }
+        
+        // Obtener el código de OT desde la URL
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        const codigoOT = pathParts[pathParts.length - 1];
+        
+        if (!codigoOT) {
+            throw new Error('Código OT no encontrado en la URL');
+        }
+        
+        console.log('Enviando datos al backend:', {codigoOT, datos});
+        
+        try {
+            // Enviar los datos al endpoint correspondiente y recibir el PDF como Blob
+            const pdfBlob = await window.apiServices.enviarPresupuestoActualizado(codigoOT, datos);
+            console.log('PDF recibido correctamente, tamaño:', pdfBlob.size);
+            return pdfBlob;
+        } catch (error) {
+            console.error('Error en enviarDatosAlBackend:', error);
+            throw error;
+        }
+    }
+}
+
+// Crear instancia global
+window.presupuestoSubmit = new PresupuestoSubmit(); 

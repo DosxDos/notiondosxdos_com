@@ -54,6 +54,38 @@ class ApiServices {
     }
 
     /**
+     * Realiza una petición que devuelve un blob (archivo binario como PDF)
+     * @param {string} endpoint - Endpoint de la API
+     * @param {Object} options - Opciones de fetch (method, body, etc)
+     * @returns {Promise<Blob>} - La respuesta en formato Blob
+     */
+    async fetchBlobWithAuth(endpoint, options = {}) {
+        const token = this.getAuthToken();
+        
+        if (!token) {
+            throw new Error('No se pudo obtener el token de autorización');
+        }
+        
+        const url = `${this.baseUrl}${endpoint}`;
+        const headers = {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        };
+        
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error en la petición a ${endpoint}: ${response.statusText}`);
+        }
+        
+        return await response.blob();
+    }
+
+    /**
      * Obtiene los datos del presupuesto por código OT
      * @param {string} codigoOT - Código de la OT
      * @returns {Promise<Object>} - Los datos del presupuesto
@@ -110,6 +142,26 @@ class ApiServices {
             // Devolver un array vacío en caso de error para evitar fallos en la UI
             return [];
         }
+    }
+
+    /**
+     * Envía los datos actualizados del presupuesto al backend para generar PDF
+     * @param {string} codigoOT - Código de la OT
+     * @param {Object} datos - Datos completos del presupuesto actualizados
+     * @returns {Promise<Blob>} - Respuesta del servidor con el PDF generado como Blob
+     */
+    async enviarPresupuestoActualizado(codigoOT, datos) {
+        // Estructurar los datos como espera el backend: {data: {data: [datos]}}
+        const datosFormateados = {
+            data: {
+                data: [datos]
+            }
+        };
+        
+        return await this.fetchBlobWithAuth(`/api/descargarPresupuesto`, {
+            method: 'POST',
+            body: JSON.stringify(datosFormateados)
+        });
     }
 }
 

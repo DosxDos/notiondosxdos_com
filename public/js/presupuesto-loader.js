@@ -4,6 +4,8 @@
 class PresupuestoLoader {
     constructor() {
         this.datosPresupuesto = null;
+        this.pdvsACargarse = 0;
+        this.pdvsCargados = 0;
         
         // Inicializar cuando el DOM esté listo
         if (document.readyState === 'loading') {
@@ -23,6 +25,9 @@ class PresupuestoLoader {
         }
     }
 
+    /**
+     * Carga los datos del presupuesto y actualiza la UI
+     */
     async cargarDatosPresupuesto() {
         // Mostrar spinner de carga
         if (window.spinner) {
@@ -45,6 +50,13 @@ class PresupuestoLoader {
                 console.error('ApiServices no está disponible');
                 if (window.spinner) window.spinner.hide();
                 return;
+            }
+            
+            // Cargar elementos existentes antes de cargar el presupuesto
+            // para que estén disponibles al procesar los elementos del escaparate
+            if (window.presupuestosTabla) {
+                await window.presupuestosTabla.cargarElementosExistentes();
+                console.log('Elementos existentes cargados antes del presupuesto');
             }
             
             // Hacer la llamada al endpoint a través del servicio API
@@ -104,6 +116,10 @@ class PresupuestoLoader {
         
         contenedorPDVs.innerHTML = '';
         
+        // Registrar cuántos PDVs hay que cargar
+        this.pdvsACargarse = pdvs.length;
+        this.pdvsCargados = 0;
+        
         // Crear un PDV por cada punto de venta
         pdvs.forEach((pdv, index) => {
             window.presupuestosTabla.agregarNuevoPDV();
@@ -116,10 +132,16 @@ class PresupuestoLoader {
     }
     
     cargarDatosPDV(pdvData, pdvIndex) {
-        if (!pdvData) return;
+        if (!pdvData) {
+            this.registrarPDVCargado();
+            return;
+        }
         
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
+        if (!pdvDiv) {
+            this.registrarPDVCargado();
+            return;
+        }
         
         // Cargar datos generales del PDV si existen
         this.cargarDatosGeneralesPDV(pdvDiv, pdvData);
@@ -138,6 +160,9 @@ class PresupuestoLoader {
         if (window.calculadora) {
             window.calculadora.actualizarTotalPDV(pdvIndex);
         }
+        
+        // Registrar que este PDV se ha cargado
+        this.registrarPDVCargado();
     }
     
     cargarDatosGeneralesPDV(pdvDiv, pdvData) {
@@ -157,6 +182,27 @@ class PresupuestoLoader {
         if (pdvData.OBS) {
             const obsInput = pdvDiv.querySelector('.obs-pdv');
             if (obsInput) obsInput.value = pdvData.OBS;
+        }
+        
+        // Cargar enlace de fotos si existe en las líneas
+        if (pdvData.lineas && Array.isArray(pdvData.lineas) && pdvData.lineas.length > 0) {
+            // Buscar el primer enlace de fotos disponible
+            const enlaceFotos = pdvData.lineas.find(linea => linea.Fotos)?.Fotos;
+            
+            if (enlaceFotos) {
+                console.log('Enlace de fotos encontrado:', enlaceFotos);
+                
+                // Buscar el contenedor de enlaces de fotos
+                const enlaceFotosContainer = pdvDiv.querySelector('.enlace-fotos-container');
+                if (enlaceFotosContainer) {
+                    // Crear el enlace HTML
+                    enlaceFotosContainer.innerHTML = `
+                        <a href="${enlaceFotos}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                            <i class="fas fa-images mr-1"></i> Ver fotos
+                        </a>
+                    `;
+                }
+            }
         }
     }
     
@@ -199,10 +245,16 @@ class PresupuestoLoader {
     }
     
     cargarDatosEscaparate(escaparateItem, escaparateData) {
-        // Cargar nombre del escaparate
-        if (escaparateData.Nombre_del_escaparate) {
-            const nombreInput = escaparateItem.querySelector('.nombre-escaparate');
-            if (nombreInput) nombreInput.value = escaparateData.Nombre_del_escaparate;
+        // Cargar nombre del escaparate (priorizar Name sobre Nombre_del_escaparate)
+        const nombreInput = escaparateItem.querySelector('.nombre-escaparate');
+        if (nombreInput) {
+            nombreInput.value = escaparateData.Name || escaparateData.Nombre_del_escaparate || '';
+        }
+        
+        // Cargar tipo de escaparate
+        const tipoInput = escaparateItem.querySelector('.tipo-escaparate');
+        if (tipoInput && escaparateData.Tipo_de_escaparate) {
+            tipoInput.value = escaparateData.Tipo_de_escaparate;
         }
 
         // Verificar si hay un elemento asociado al escaparate
@@ -211,6 +263,30 @@ class PresupuestoLoader {
             escaparateItem.dataset.tieneElemento = 'true';
             escaparateItem.dataset.elementoId = escaparateData.elemento_de_escaparate.id;
         }
+    }
+    
+    /**
+     * Busca el nombre descriptivo de un elemento basado en su ID
+     * @param {string} elementoId - ID del elemento a buscar
+     * @returns {string} - Nombre descriptivo del elemento o cadena vacía
+     */
+    buscarNombreElemento(elementoId) {
+        if (!elementoId) return '';
+        
+        // Intentar buscar en los elementos existentes cargados
+        if (window.presupuestosTabla && window.presupuestosTabla.elementosExistentesDisponibles) {
+            const elementoExistente = window.presupuestosTabla.elementosExistentesDisponibles.find(
+                elem => elem.id === elementoId
+            );
+            
+            if (elementoExistente) {
+                console.log('Elemento encontrado en tabla:', elementoExistente);
+                return elementoExistente.Nombre || '';
+            }
+        }
+        
+        // Si no se encuentra, devolver cadena vacía
+        return '';
     }
     
     cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData) {
@@ -271,11 +347,20 @@ class PresupuestoLoader {
             // Obtener la primera fila
             const elementoRow = elementosContainer.querySelector('tr');
             if (elementoRow) {
+                // Acceder a la información del elemento
+                const elementoInfo = escaparateData.elemento_de_escaparate;
+                console.log('Elemento info del backend:', elementoInfo);
+                
+                // Buscar el nombre descriptivo del elemento
+                const nombreElemento = this.buscarNombreElemento(elementoInfo.id) || elementoInfo.name || '';
+                console.log('Nombre encontrado para elemento:', nombreElemento);
+                
                 // Crear un objeto con los datos del elemento_de_escaparate
                 const elementoData = {
+                    Nombre_del_elemento: nombreElemento,
                     Nombre: escaparateData.Name || escaparateData.Nombre_del_escaparate || '',
-                    Alto: /* escaparateData.Superior || */ escaparateData.Alto_del_Suelo || '',
-                    Ancho: /* escaparateData.Inferior || */ escaparateData.Ancho_del_Suelo || '',
+                    Alto: escaparateData.Alto_del_elemento || escaparateData.Alto_del_Suelo || '',
+                    Ancho: escaparateData.Ancho_del_elemento || escaparateData.Ancho_del_Suelo || '',
                     Elemento: escaparateData.elemento_de_escaparate
                 };
                 
@@ -291,10 +376,10 @@ class PresupuestoLoader {
     }
     
     cargarDatosElemento(elementoRow, elementoData, pdvIndex, escaparateIndex) {
-        // Cargar concepto (Nombre) si existe
-        if (elementoData.Nombre) {
-            const conceptoInput = elementoRow.querySelector('.concepto');
-            if (conceptoInput) conceptoInput.value = elementoData.Nombre;
+        // Cargar concepto (priorizar Nombre_del_elemento sobre Nombre)
+        const conceptoInput = elementoRow.querySelector('.concepto');
+        if (conceptoInput) {
+            conceptoInput.value = elementoData.Nombre_del_elemento || elementoData.Nombre || '';
         }
         
         // Cargar Alto si existe
@@ -366,6 +451,32 @@ class PresupuestoLoader {
     // Método retenido para compatibilidad
     inicializarCamposEscaparate(fila, escaparate) {
         console.log('Método inicializarCamposEscaparate es obsoleto con la nueva estructura');
+    }
+    
+    /**
+     * Registra que un PDV ha sido cargado y verifica si todos los PDVs han sido cargados
+     */
+    registrarPDVCargado() {
+        this.pdvsCargados++;
+        
+        // Si todos los PDVs han sido cargados, inicializar los cálculos
+        if (this.pdvsCargados >= this.pdvsACargarse) {
+            console.log('Todos los PDVs han sido cargados. Inicializando cálculos...');
+            this.inicializarCalculosAutomaticos();
+        }
+    }
+    
+    /**
+     * Inicializa los cálculos automáticos después de cargar todos los datos
+     */
+    inicializarCalculosAutomaticos() {
+        // Esperar un momento para asegurar que el DOM está completamente actualizado
+        setTimeout(() => {
+            if (window.calculadora) {
+                window.calculadora.inicializarCalculos();
+                console.log('Cálculos inicializados automáticamente');
+            }
+        }, 200);
     }
 }
 

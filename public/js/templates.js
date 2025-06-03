@@ -37,11 +37,16 @@ function generarTemplatePDV(index, obtenerNombrePDV) {
         <div class="grid grid-cols-3 gap-4 mb-4">
             <div class="p-2 border rounded">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
-                <div class="flex items-center">
-                    <input type="file" class="file-input-pdv hidden">
-                    <button class="upload-btn-pdv w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                        Subir foto
-                    </button>
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center">
+                        <input type="file" class="file-input-pdv hidden">
+                        <button class="upload-btn-pdv w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
+                            Subir foto
+                        </button>
+                    </div>
+                    <div class="enlace-fotos-container">
+                        <!-- Aquí se añadirá el enlace a las fotos dinámicamente -->
+                    </div>
                 </div>
             </div>
             <div class="p-2 border rounded">
@@ -59,7 +64,7 @@ function generarTemplatePDV(index, obtenerNombrePDV) {
             </div>
             <div class="p-2 border rounded">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Montaje</label>
-                <input type="number" step="0.01" class="montaje-pdv w-full p-1.5 border rounded">
+                <input type="text" inputmode="decimal" class="montaje-pdv w-full p-1.5 border rounded">
             </div>
         </div>
         <div class="grid grid-cols-1 gap-4 mb-6">
@@ -73,11 +78,11 @@ function generarTemplatePDV(index, obtenerNombrePDV) {
         <div class="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded mb-4">
             <div class="p-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total Escaparates</label>
-                <input type="number" step="0.01" class="total-escaparates-pdv w-full p-1.5 border rounded" readonly>
+                <input type="text" inputmode="decimal" class="total-escaparates-pdv w-full p-1.5 border rounded">
             </div>
             <div class="p-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total PDV</label>
-                <input type="number" step="0.01" class="total-pdv w-full p-1.5 border rounded" readonly>
+                <input type="text" inputmode="decimal" class="total-pdv w-full p-1.5 border rounded">
             </div>
         </div>
 
@@ -122,14 +127,18 @@ function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
                 </button>
             </div>
             
-            <div class="grid grid-cols-2 gap-4 mb-3">
+            <div class="grid grid-cols-3 gap-4 mb-3">
                 <div class="p-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Escaparate</label>
                     <input type="text" class="nombre-escaparate w-full p-1.5 border rounded">
                 </div>
                 <div class="p-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Escaparate</label>
+                    <input type="text" class="tipo-escaparate w-full p-1.5 border rounded">
+                </div>
+                <div class="p-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Total Escaparate</label>
-                    <input type="number" step="0.01" class="total-escaparate w-full p-1.5 border rounded" readonly>
+                    <input type="text" inputmode="decimal" class="total-escaparate w-full p-1.5 border rounded">
                 </div>
             </div>
 
@@ -137,15 +146,15 @@ function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
             <table class="w-full text-sm bg-white rounded-md shadow border border-gray-200 mb-3 tabla-elementos-escaparate">
                 <thead class="bg-red-700 text-white text-sm text-center">
                     <tr>
-                        <th class="p-2">Concepto</th>
-                        <th class="p-2">Alto</th>
-                        <th class="p-2">Ancho</th>
-                        <th class="p-2">Material</th>
-                        <th class="p-2">Precio/M.Prima</th>
-                        <th class="p-2">Precio Unitario</th>
-                        <th class="p-2">Unidades</th>
-                        <th class="p-2">Total</th>
-                        <th class="p-2">Acciones</th>
+                        <th class="p-2 w-[18%]">Concepto</th>
+                        <th class="p-2 w-[8%]">Alto</th>
+                        <th class="p-2 w-[8%]">Ancho</th>
+                        <th class="p-2 w-[18%]">Material</th>
+                        <th class="p-2 w-[12%]">Precio/M.Prima</th>
+                        <th class="p-2 w-[12%]">Precio Unitario</th>
+                        <th class="p-2 w-[8%]">Unidades</th>
+                        <th class="p-2 w-[12%]">Total</th>
+                        <th class="p-2 w-[4%]"></th> <!-- Columna oculta para acciones sin encabezado -->
                     </tr>
                 </thead>
                 <tbody class="elementos-container">
@@ -155,7 +164,7 @@ function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
                     <tr>
                         <td colspan="7" class="text-right pr-3 font-medium">Total Escaparate:</td>
                         <td class="p-2">
-                            <input type="number" step="0.01" class="total-elementos w-full p-1 border rounded" readonly>
+                            <input type="text" inputmode="decimal" class="total-elementos w-full p-1 border rounded">
                         </td>
                         <td></td>
                     </tr>
@@ -164,7 +173,7 @@ function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
 
             <div class="flex justify-end space-x-2">
                 <button class="add-elemento-nuevo bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 transition"
-                        data-pdv-index="${pdvIndex}" 
+                        data-pdv-index="${pdvIndex}"
                         data-escaparate-index="${escaparateIndex}">
                     + Añadir elemento nuevo
                 </button>
@@ -191,10 +200,10 @@ function generarTemplateElemento(esFilaInicial = true, generarOpcionesMateriales
                 <input type="text" class="concepto w-full p-1.5 border rounded text-sm" placeholder="Concepto">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="dimension alto w-16 p-1.5 border rounded text-sm" placeholder="Alto">
+                <input type="text" inputmode="decimal" class="dimension alto w-full p-1.5 border rounded text-sm" placeholder="Alto">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="dimension ancho w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
+                <input type="text" inputmode="decimal" class="dimension ancho w-full p-1.5 border rounded text-sm" placeholder="Ancho">
             </td>
             <td class="p-2">
                 <select class="material w-full p-1.5 border rounded">
@@ -203,18 +212,18 @@ function generarTemplateElemento(esFilaInicial = true, generarOpcionesMateriales
                 </select>
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded">
+                <input type="text" inputmode="decimal" class="precio-mp w-full p-1.5 border rounded">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
+                <input type="text" inputmode="decimal" class="precio-unitario w-full p-1.5 border rounded">
             </td>
             <td class="p-2">
-                <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
+                <input type="text" inputmode="decimal" class="unidades w-full p-1.5 border rounded text-sm" value="1">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="total-elemento w-20 p-1.5 border rounded" readonly>
+                <input type="text" inputmode="decimal" class="total-elemento w-full p-1.5 border rounded">
             </td>
-            <td class="p-2">
+            <td class="p-2 w-0 text-center">
                 <button class="eliminar-elemento text-red-500 hover:text-red-700">
                     <i class="fas fa-times"></i>
                 </button>
@@ -240,10 +249,10 @@ function generarTemplateElementoExistente(esFilaInicial = true, generarOpcionesM
                 </select>
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="dimension alto w-16 p-1.5 border rounded text-sm" placeholder="Alto">
+                <input type="text" inputmode="decimal" class="dimension alto w-full p-1.5 border rounded text-sm" placeholder="Alto">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="dimension ancho w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
+                <input type="text" inputmode="decimal" class="dimension ancho w-full p-1.5 border rounded text-sm" placeholder="Ancho">
             </td>
             <td class="p-2">
                 <select class="material w-full p-1.5 border rounded">
@@ -252,18 +261,18 @@ function generarTemplateElementoExistente(esFilaInicial = true, generarOpcionesM
                 </select>
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded">
+                <input type="text" inputmode="decimal" class="precio-mp w-full p-1.5 border rounded">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
+                <input type="text" inputmode="decimal" class="precio-unitario w-full p-1.5 border rounded">
             </td>
             <td class="p-2">
-                <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
+                <input type="text" inputmode="decimal" class="unidades w-full p-1.5 border rounded text-sm" value="1">
             </td>
             <td class="p-2">
-                <input type="number" step="0.01" class="total-elemento w-20 p-1.5 border rounded" readonly>
+                <input type="text" inputmode="decimal" class="total-elemento w-full p-1.5 border rounded">
             </td>
-            <td class="p-2">
+            <td class="p-2 w-0 text-center">
                 <button class="eliminar-elemento text-red-500 hover:text-red-700">
                     <i class="fas fa-times"></i>
                 </button>
