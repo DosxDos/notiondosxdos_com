@@ -158,10 +158,9 @@ class PresupuestoSubmit {
             pdvData.Total_Escaparates = parseFloat(totalEscaparatesPdv.value) || 0;
         }
         
-        // Total PDV
-        const totalPdv = pdvDiv.querySelector('.total-pdv');
-        if (totalPdv) {
-            pdvData.Total_PDV = parseFloat(totalPdv.value) || 0;
+        // Eliminar Total_PDV ya que no debe usarse
+        if (pdvData.Total_PDV !== undefined) {
+            delete pdvData.Total_PDV;
         }
         
         // Recopilar escaparates
@@ -230,6 +229,13 @@ class PresupuestoSubmit {
         
         // Recopilar elementos del escaparate
         escaparateData.elementos = this.recopilarDatosElementos(escaparateItem, pdvIndex, escaparateIndex);
+        
+        // Obtener precio material y unidades de los atributos data del DOM
+        // Estos valores son necesarios para que el PDF calcule correctamente los importes
+        escaparateData.Precio_material = parseFloat(escaparateItem.getAttribute('data-precio-material')) || 
+                                        (escaparateData.Total_Escaparate / (escaparateData.elementos.length || 1));
+        
+        escaparateData.unidades_material = parseInt(escaparateItem.getAttribute('data-unidades-material')) || 1;
         
         return escaparateData;
     }

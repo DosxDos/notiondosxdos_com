@@ -2,6 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
 
+//Redondea una cifra hacia arriba y la formatea con 2 decimales
+function redondearHaciaArriba(valor) {
+    return Math.ceil(valor).toFixed(2);
+}
+
 function obtenerFechaActual() {
     const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     const hoy = new Date();
@@ -19,8 +24,6 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
             blockY = height - 250; // O donde quieras reiniciar en la nueva página
         }
     };
-
-
 
     const colorRojo = rgb(0.686, 0.106, 0.165);
     const colorNegro = rgb(0, 0, 0);
@@ -92,8 +95,6 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
 
         textoY -= textoSpacing;
     }
-
-
 
     const footerYH = 620;
     let blockY = footerYH + 12;
@@ -180,13 +181,13 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         ensureSpace(rowHeight);
         drawTableCell(nombre, colX[0], blockY, colWidth[0], rowHeight);
         drawTableCell(`${(pdv.escaparates || []).length}`, colX[1], blockY, colWidth[1], rowHeight);
-        drawTableCell(`${(totalPDV / (pdv.escaparates || []).length).toFixed(2)} €`, colX[2], blockY, colWidth[2], rowHeight);
-        drawTableCell(`${totalPDV.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
+        drawTableCell(`${redondearHaciaArriba(totalPDV / (pdv.escaparates || []).length)} €`, colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell(`${redondearHaciaArriba(totalPDV)} €`, colX[3], blockY, colWidth[3], rowHeight);
         blockY -= rowHeight;
     }
 
     drawTableCell('TOTAL REALIZACIÓN', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
-    drawTableCell(`${totalRealizacion.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
+    drawTableCell(`${redondearHaciaArriba(totalRealizacion)} €`, colX[3], blockY, colWidth[3], rowHeight);
     blockY -= rowHeight + 20;
 
     drawTableCell('CONCEPTO', colX[0], blockY, colWidth[0], rowHeight);
@@ -198,14 +199,14 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     ensureSpace(rowHeight);
     let totalMontajes = 0;
     for (const pdv of datosOT.puntos_de_venta || []) {
-        const precioMontaje = parseFloat(pdv.montaje || 0);
+        const precioMontaje = parseFloat(pdv.Montaje || 0);
         if (!precioMontaje) continue;
 
         ensureSpace(rowHeight);
         drawTableCell(`Montaje ${pdv.PDV_relacionados?.name || ''}`, colX[0], blockY, colWidth[0], rowHeight);
         drawTableCell('1', colX[1], blockY, colWidth[1], rowHeight);
-        drawTableCell(`${precioMontaje.toFixed(2)} €`, colX[2], blockY, colWidth[2], rowHeight);
-        drawTableCell(`${precioMontaje.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
+        drawTableCell(`${redondearHaciaArriba(precioMontaje)} €`, colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell(`${redondearHaciaArriba(precioMontaje)} €`, colX[3], blockY, colWidth[3], rowHeight);
         blockY -= rowHeight;
 
         totalMontajes += precioMontaje;
@@ -214,8 +215,7 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     ensureSpace(rowHeight);
 
     drawTableCell('TOTAL MONTAJES', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
-    drawTableCell(`${totalMontajes.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
-
+    drawTableCell(`${redondearHaciaArriba(totalMontajes)} €`, colX[3], blockY, colWidth[3], rowHeight);
 
     ensureSpace(rowHeight + 60); // Por si hay que saltar de página
 
@@ -261,16 +261,13 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         borderWidth: 1,
     });
     const precioTotal = totalRealizacion + totalMontajes;
-    page.drawText(`${precioTotal.toFixed(2)} €`, {
-        x: colX[3] + centerText(`${precioTotal.toFixed(2)} €`, colWidth[3], boldFont, 9),
+    page.drawText(`${redondearHaciaArriba(precioTotal)} €`, {
+        x: colX[3] + centerText(`${redondearHaciaArriba(precioTotal)} €`, colWidth[3], boldFont, 9),
         y: blockY - rowFinalHeight + 10,
         size: 9,
         font: boldFont,
         color: colorNegro,
     });
-
-
-
 
     const pages = pdfDoc.getPages();
     const totalPages = pages.length;

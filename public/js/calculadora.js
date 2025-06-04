@@ -104,23 +104,25 @@ class Calculadora {
         
         const totalEscaparates = totalesEscaparates.reduce((sum, value) => sum + value, 0);
         
-        // Obtener valor del montaje
-        const montaje = parseFloat(pdvDiv.querySelector('.montaje-pdv').value.replace(',', '.')) || 0;
-        
-        // Calcular total del PDV (escaparates + montaje)
-        const totalPDV = (totalEscaparates + montaje).toFixed(2);
-        
         // Actualizar campos
         const totalEscaparatesInput = pdvDiv.querySelector('.total-escaparates-pdv');
         if (totalEscaparatesInput) {
             totalEscaparatesInput.value = totalEscaparates.toFixed(2);
         }
         
-        const totalPDVInput = pdvDiv.querySelector('.total-pdv');
-        if (totalPDVInput) {
-            totalPDVInput.value = totalPDV;
-        }
-
+        // Ya no calculamos ni mostramos el Total PDV
+        // Actualizar precios de materiales para cada escaparate
+        pdvDiv.querySelectorAll('.escaparate-item').forEach(escaparateItem => {
+            const escaparateIndex = parseInt(escaparateItem.dataset.escaparateIndex);
+            const totalEscaparate = parseFloat(escaparateItem.querySelector('.total-escaparate').value.replace(',', '.')) || 0;
+            const numElementos = escaparateItem.querySelectorAll('.elemento-escaparate').length || 1;
+            
+            // Guardar el precio material (que se usará como importe unitario en el PDF)
+            const precioMaterial = totalEscaparate / numElementos;
+            escaparateItem.setAttribute('data-precio-material', precioMaterial.toFixed(2));
+            escaparateItem.setAttribute('data-unidades-material', '1');
+        });
+        
         this.recalcularTotales();
     }
 
@@ -128,11 +130,11 @@ class Calculadora {
      * Recalcula el total general sumando todos los PDVs
      */
     recalcularTotales() {
-        // Calcular el total general sumando todos los totales de PDV
-        const totalesPDV = Array.from(document.querySelectorAll('.total-pdv'))
+        // Calcular el total general sumando todos los totales de escaparates
+        const totalesEscaparates = Array.from(document.querySelectorAll('.total-escaparates-pdv'))
             .map(input => parseFloat(input.value.replace(',', '.')) || 0);
         
-        const totalGeneral = totalesPDV.reduce((sum, value) => sum + value, 0).toFixed(2);
+        const totalGeneral = totalesEscaparates.reduce((sum, value) => sum + value, 0).toFixed(2);
         
         // Actualizar total general si existe un elemento para ello
         const totalGeneralInput = document.getElementById('total-general');
