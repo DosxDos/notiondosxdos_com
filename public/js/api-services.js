@@ -1,15 +1,12 @@
-/**
- * Servicio centralizado para todas las llamadas a la API
- */
+// Servicio centralizado para todas las llamadas a la API
+ 
 class ApiServices {
     constructor() {
         this.baseUrl = ''; // URL base para las peticiones, vacío si es relativo
     }
 
-    /**
-     * Obtiene el token de autorización de la URL
-     * @returns {string|null} El token o null si no se encuentra
-     */
+    // Obtiene el token de autorización de la URL
+    
     getAuthToken() {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
@@ -21,12 +18,8 @@ class ApiServices {
         return token;
     }
 
-    /**
-     * Realizar una petición a la API con el token de autorización
-     * @param {string} endpoint - Endpoint de la API
-     * @param {Object} options - Opciones de fetch (method, body, etc)
-     * @returns {Promise<Object>} - La respuesta en formato JSON
-     */
+    //Realizar una petición a la API con el token de autorización
+    
     async fetchWithAuth(endpoint, options = {}) {
         const token = this.getAuthToken();
         
@@ -53,12 +46,8 @@ class ApiServices {
         return await response.json();
     }
 
-    /**
-     * Realiza una petición que devuelve un blob (archivo binario como PDF)
-     * @param {string} endpoint - Endpoint de la API
-     * @param {Object} options - Opciones de fetch (method, body, etc)
-     * @returns {Promise<Blob>} - La respuesta en formato Blob
-     */
+    // Realiza una petición que devuelve un blob (archivo binario como PDF)
+    
     async fetchBlobWithAuth(endpoint, options = {}) {
         const token = this.getAuthToken();
         
@@ -85,29 +74,20 @@ class ApiServices {
         return await response.blob();
     }
 
-    /**
-     * Obtiene los datos del presupuesto por código OT
-     * @param {string} codigoOT - Código de la OT
-     * @returns {Promise<Object>} - Los datos del presupuesto
-     */
+    // Obtiene los datos del presupuesto por código OT
+     
     async obtenerPresupuestoPorOT(codigoOT) {
         return await this.fetchWithAuth(`/api/presupuestoEscaparate/${codigoOT}`);
     }
 
-    /**
-     * Obtiene la lista de materiales para presupuestos
-     * @returns {Promise<Object>} - Lista de materiales
-     */
+    // Obtiene la lista de materiales para presupuestos
+     
     async obtenerMateriales() {
         return await this.fetchWithAuth('/api/materialesPresupuesto');
     }
 
-    /**
-     * Obtiene datos de un módulo específico de Zoho
-     * @param {string} modulo - Nombre del módulo a consultar
-     * @param {string} criteria - Criterios de búsqueda (opcional)
-     * @returns {Promise<Object>} - Datos del módulo
-     */
+    // Obtiene datos de un módulo específico de Zoho
+    
     async obtenerDatosModuloZoho(modulo, criteria = null) {
         let endpoint = `/api/recogerModuloZoho?modulo=${modulo}`;
         
@@ -118,19 +98,15 @@ class ApiServices {
         return await this.fetchWithAuth(endpoint);
     }
 
-    /**
-     * Obtiene todos los puntos de venta desde Zoho
-     * @returns {Promise<Array>} - Array de puntos de venta
-     */
+    // Obtiene todos los puntos de venta desde Zoho
+    
     async obtenerPuntosDeVenta() {
         const response = await this.obtenerDatosModuloZoho('PuntosDeVenta');
         return response.proveedores || [];
     }
 
-    /**
-     * Obtiene la lista de elementos existentes que pueden ser reutilizados
-     * @returns {Promise<Array>} - Array de elementos existentes
-     */
+    // Obtiene la lista de elementos existentes que pueden ser reutilizados
+     
     async obtenerElementosExistentes() {
         try {
             // Usar obtenerDatosModuloZoho de manera similar a obtenerPuntosDeVenta
@@ -144,12 +120,8 @@ class ApiServices {
         }
     }
 
-    /**
-     * Envía los datos actualizados del presupuesto al backend para generar PDF
-     * @param {string} codigoOT - Código de la OT
-     * @param {Object} datos - Datos completos del presupuesto actualizados
-     * @returns {Promise<Blob>} - Respuesta del servidor con el PDF generado como Blob
-     */
+    // Envía los datos actualizados del presupuesto al backend para generar PDF
+    
     async enviarPresupuestoActualizado(codigoOT, datos) {
         // Estructurar los datos como espera el backend: {data: {data: [datos]}}
         const datosFormateados = {

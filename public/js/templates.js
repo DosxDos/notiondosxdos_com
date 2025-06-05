@@ -75,14 +75,10 @@ function generarTemplatePDV(index, obtenerNombrePDV) {
         </div>
 
         <!-- Totales del PDV -->
-        <div class="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded mb-4">
+        <div class="p-3 bg-gray-50 rounded mb-4">
             <div class="p-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total Escaparates</label>
                 <input type="text" inputmode="decimal" class="total-escaparates-pdv w-full p-1.5 border rounded">
-            </div>
-            <div class="p-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Total PDV</label>
-                <input type="text" inputmode="decimal" class="total-pdv w-full p-1.5 border rounded">
             </div>
         </div>
 

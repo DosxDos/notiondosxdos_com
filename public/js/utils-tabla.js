@@ -360,11 +360,6 @@ class EventHandlers {
         if (totalEscaparatesPdv) {
             totalEscaparatesPdv.addEventListener('input', () => window.calculadora.recalcularTotales());
         }
-        
-        const totalPdv = pdvDiv.querySelector('.total-pdv');
-        if (totalPdv) {
-            totalPdv.addEventListener('input', () => window.calculadora.recalcularTotales());
-        }
 
         // Botón para desplegar/colapsar escaparates
         const toggleEscaparatesBtn = pdvDiv.querySelector('.toggle-escaparates');

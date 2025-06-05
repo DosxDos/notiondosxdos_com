@@ -230,10 +230,19 @@ class PresupuestoSubmit {
         // Recopilar elementos del escaparate
         escaparateData.elementos = this.recopilarDatosElementos(escaparateItem, pdvIndex, escaparateIndex);
         
-        // Obtener precio material y unidades de los atributos data del DOM
-        // Estos valores son necesarios para que el PDF calcule correctamente los importes
-        escaparateData.Precio_material = parseFloat(escaparateItem.getAttribute('data-precio-material')) || 
-                                        (escaparateData.Total_Escaparate / (escaparateData.elementos.length || 1));
+        // Calcular el precio del material basado en el total del escaparate o usar el valor existente
+        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+        const totalEscaparatesPdv = pdvDiv ? parseFloat(pdvDiv.querySelector('.total-escaparates-pdv')?.value || 0) : 0;
+        const numEscaparates = pdvDiv ? pdvDiv.querySelectorAll('.escaparate-item').length : 1;
+        
+        // Si hay un valor válido para totalEscaparatesPdv, calcular el precio material como promedio
+        if (totalEscaparatesPdv > 0 && numEscaparates > 0) {
+            escaparateData.Precio_material = (totalEscaparatesPdv / numEscaparates).toFixed(2);
+        } else {
+            // Si no, usar el valor del atributo data o calcular basado en el total del escaparate
+            escaparateData.Precio_material = parseFloat(escaparateItem.getAttribute('data-precio-material')) || 
+                                          (escaparateData.Total_Escaparate / (escaparateData.elementos.length || 1));
+        }
         
         escaparateData.unidades_material = parseInt(escaparateItem.getAttribute('data-unidades-material')) || 1;
         
@@ -337,7 +346,17 @@ class PresupuestoSubmit {
             throw new Error('Código OT no encontrado en la URL');
         }
         
+        // Verificar que estamos enviando Total_Escaparates en lugar de Total_Escaparate
         console.log('Enviando datos al backend:', {codigoOT, datos});
+        
+        // Log de valores de Total_Escaparates para cada PDV
+        datos.puntos_de_venta.forEach((pdv, index) => {
+            console.log(`PDV ${index + 1} (${pdv.PDV_relacionados?.name || 'Sin nombre'}):`, {
+                Total_Escaparates: pdv.Total_Escaparates,
+                Num_Escaparates: pdv.escaparates?.length || 0,
+                Precio_Promedio: pdv.escaparates?.length ? (pdv.Total_Escaparates / pdv.escaparates.length).toFixed(2) : 0
+            });
+        });
         
         try {
             // Enviar los datos al endpoint correspondiente y recibir el PDF como Blob
