@@ -1,6 +1,4 @@
-/**
- * Clase para gestionar las tablas de presupuestos de PDVs y escaparates
- */
+// Clase para gestionar las tablas de presupuestos de PDVs y escaparates
 class PresupuestosTabla {
     constructor() {
         this.materialesDisponibles = {};
@@ -208,19 +206,12 @@ class PresupuestosTabla {
         document.querySelectorAll('.nombre-pdv').forEach(select => this.cargarOpcionesPDV(select));
     }
 
-    /**
-     * Genera opciones HTML para selectores de materiales
-     * @returns {string} HTML con opciones
-     */
+    // Genera opciones HTML para selectores de materiales
     generarOpcionesMateriales() {
         return window.calculadora.generarOpcionesMateriales();
     }
 
-    /**
-     * Agrega un elemento existente al escaparate
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Agrega un elemento existente al escaparate
     agregarElementoExistente(pdvIndex, escaparateIndex) {
         // Usar TableUtils para encontrar los elementos necesarios
         const { elementosContainer } = window.TableUtils.encontrarElementos(pdvIndex, escaparateIndex);
@@ -256,13 +247,7 @@ class PresupuestosTabla {
         }, 50);
     }
 
-    /**
-     * Actualiza los campos de un elemento basado en el elemento existente seleccionado
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {string} elementoId - ID del elemento existente seleccionado
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Actualiza los campos de un elemento basado en el elemento existente seleccionado
     actualizarCamposDesdeElementoExistente(elementoRow, elementoId, pdvIndex, escaparateIndex) {
         if (!elementoId) return;
 
@@ -327,10 +312,7 @@ class PresupuestosTabla {
         window.calculadora.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
     }
 
-    /**
-     * Genera las opciones HTML para el selector de elementos existentes
-     * @returns {string} HTML con las opciones
-     */
+    // Genera las opciones HTML para el selector de elementos existentes
     generarOpcionesElementosExistentes() {
         return this.elementosExistentesDisponibles
             .map(elem => {
@@ -345,9 +327,7 @@ class PresupuestosTabla {
             .join('');
     }
 
-    /**
-     * Carga los elementos existentes desde el API
-     */
+    // Carga los elementos existentes desde el API
     async cargarElementosExistentes() {
         try {
             if (!window.apiServices) {
@@ -403,9 +383,7 @@ class PresupuestosTabla {
         }
     }
     
-    /**
-     * Actualiza todos los selectores de elementos existentes en la página
-     */
+    // Actualiza todos los selectores de elementos existentes en la página
     actualizarSelectsElementosExistentes() {
         document.querySelectorAll('.concepto-select').forEach(select => {
             // Usar TableUtils para actualizar el select

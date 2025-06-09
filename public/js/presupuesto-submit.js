@@ -1,16 +1,11 @@
-/**
- * Módulo para manejar el envío de datos del presupuesto al backend
- * Se encarga de recopilar todos los datos del formulario y enviarlos al servidor
- */
-
+// Módulo para manejar el envío de datos del presupuesto al backend
+// Se encarga de recopilar todos los datos del formulario y enviarlos al servidor
 class PresupuestoSubmit {
     constructor() {
         this.init();
     }
 
-    /**
-     * Inicializa el módulo y agrega los event listeners
-     */
+    // Inicializa el módulo y agrega los event listeners
     init() {
         // Añadir event listener al botón de generar PDF cuando el DOM esté listo
         if (document.readyState === 'loading') {
@@ -20,9 +15,7 @@ class PresupuestoSubmit {
         }
     }
 
-    /**
-     * Configura los event listeners necesarios
-     */
+    // Configura los event listeners necesarios
     setupEventListeners() {
         const generarPdfBtn = document.getElementById('generar-pdf');
         if (generarPdfBtn) {
@@ -30,9 +23,7 @@ class PresupuestoSubmit {
         }
     }
 
-    /**
-     * Maneja el evento de clic en el botón "Generar PDF"
-     */
+    // Maneja el evento de clic en el botón "Generar PDF"
     async handleGenerarPDF() {
         try {
             // Mostrar indicador de carga
@@ -68,10 +59,7 @@ class PresupuestoSubmit {
         }
     }
 
-    /**
-     * Recopila todos los datos del formulario
-     * @returns {Object} Objeto con todos los datos del presupuesto
-     */
+    // Recopila todos los datos del formulario
     recopilarDatosFormulario() {
         // Si no hay datos previos cargados, crear un objeto nuevo
         if (!window.presupuestoLoader || !window.presupuestoLoader.datosPresupuesto) {
@@ -101,10 +89,7 @@ class PresupuestoSubmit {
         return datosActualizados;
     }
 
-    /**
-     * Recopila los datos de todos los PDVs en el formulario
-     * @returns {Array} Array con los datos de todos los PDVs
-     */
+    // Recopila los datos de todos los PDVs en el formulario
     recopilarDatosPDVs() {
         const puntosDeVenta = [];
         const pdvDivs = document.querySelectorAll('.tabla-pdv');
@@ -117,12 +102,7 @@ class PresupuestoSubmit {
         return puntosDeVenta;
     }
 
-    /**
-     * Recopila los datos de un PDV específico
-     * @param {Element} pdvDiv - Elemento DOM que contiene los datos del PDV
-     * @param {number} index - Índice del PDV
-     * @returns {Object} Objeto con los datos del PDV
-     */
+    // Recopila los datos de un PDV específico
     recopilarDatosPDV(pdvDiv, index) {
         // Obtener datos originales del PDV si existen
         let pdvData = {};
@@ -169,12 +149,7 @@ class PresupuestoSubmit {
         return pdvData;
     }
 
-    /**
-     * Recopila los datos de todos los escaparates de un PDV
-     * @param {Element} pdvDiv - Elemento DOM que contiene los datos del PDV
-     * @param {number} pdvIndex - Índice del PDV
-     * @returns {Array} Array con los datos de todos los escaparates
-     */
+    // Recopila los datos de todos los escaparates de un PDV
     recopilarDatosEscaparates(pdvDiv, pdvIndex) {
         const escaparates = [];
         const escaparateItems = pdvDiv.querySelectorAll('.escaparate-item');
@@ -187,13 +162,7 @@ class PresupuestoSubmit {
         return escaparates;
     }
 
-    /**
-     * Recopila los datos de un escaparate específico
-     * @param {Element} escaparateItem - Elemento DOM que contiene los datos del escaparate
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     * @returns {Object} Objeto con los datos del escaparate
-     */
+    // Recopila los datos de un escaparate específico
     recopilarDatosEscaparate(escaparateItem, pdvIndex, escaparateIndex) {
         // Obtener datos originales del escaparate si existen
         let escaparateData = {};
@@ -249,13 +218,7 @@ class PresupuestoSubmit {
         return escaparateData;
     }
 
-    /**
-     * Recopila los datos de todos los elementos de un escaparate
-     * @param {Element} escaparateItem - Elemento DOM que contiene los datos del escaparate
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     * @returns {Array} Array con los datos de todos los elementos
-     */
+    // Recopila los datos de todos los elementos de un escaparate
     recopilarDatosElementos(escaparateItem, pdvIndex, escaparateIndex) {
         const elementos = [];
         const elementosRows = escaparateItem.querySelectorAll('.elemento-escaparate');
@@ -268,11 +231,7 @@ class PresupuestoSubmit {
         return elementos;
     }
 
-    /**
-     * Recopila los datos de un elemento específico
-     * @param {Element} elementoRow - Elemento DOM que contiene los datos del elemento
-     * @returns {Object} Objeto con los datos del elemento
-     */
+    // Recopila los datos de un elemento específico
     recopilarDatosElemento(elementoRow) {
         const elementoData = {};
         
@@ -327,11 +286,7 @@ class PresupuestoSubmit {
         return elementoData;
     }
 
-    /**
-     * Envía los datos recopilados al backend
-     * @param {Object} datos - Datos completos del presupuesto
-     * @returns {Promise<Blob>} PDF generado como Blob
-     */
+    // Envía los datos recopilados al backend
     async enviarDatosAlBackend(datos) {
         if (!window.apiServices) {
             throw new Error('ApiServices no está disponible');

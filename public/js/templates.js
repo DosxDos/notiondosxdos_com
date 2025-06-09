@@ -1,14 +1,6 @@
-/**
- * Módulo de templates para generación de HTML dinámico
- * Centraliza todas las funciones de generación de HTML para mantener la UI consistente
- */
+// Módulo de templates para generación de HTML dinámico. Centraliza todas las funciones de generación de HTML para mantener la UI consistente
 
-/**
- * Genera el template HTML para un punto de venta
- * @param {number} index - Índice del PDV
- * @param {Function} obtenerNombrePDV - Función para obtener el nombre del PDV
- * @returns {string} Template HTML del PDV
- */
+// Genera el template HTML para un punto de venta
 function generarTemplatePDV(index, obtenerNombrePDV) {
     // Comprobar si tenemos datos de puntos de venta disponibles
     const nombrePDV = obtenerNombrePDV ? obtenerNombrePDV(index) : null;
@@ -107,12 +99,7 @@ function generarTemplatePDV(index, obtenerNombrePDV) {
     `;
 }
 
-/**
- * Genera el template HTML para un escaparate dentro de un PDV
- * @param {number} pdvIndex - Índice del PDV al que pertenece
- * @param {number} escaparateIndex - Índice del escaparate
- * @returns {string} Template HTML del escaparate
- */
+// Genera el template HTML para un escaparate dentro de un PDV
 function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
     return `
         <div class="escaparate-item border rounded p-3 bg-white" data-escaparate-index="${escaparateIndex}">
@@ -183,12 +170,7 @@ function generarTemplateEscaparate(pdvIndex, escaparateIndex) {
     `;
 }
 
-/**
- * Genera el template HTML para un elemento de escaparate
- * @param {boolean} esFilaInicial - Indica si es la primera fila del escaparate
- * @param {Function} generarOpcionesMateriales - Función para generar las opciones de materiales
- * @returns {string} Template HTML del elemento
- */
+// Genera el template HTML para un elemento de escaparate
 function generarTemplateElemento(esFilaInicial = true, generarOpcionesMateriales) {
     return `
         <tr class="border-b text-center elemento-escaparate">
@@ -228,13 +210,7 @@ function generarTemplateElemento(esFilaInicial = true, generarOpcionesMateriales
     `;
 }
 
-/**
- * Genera el template HTML para un elemento de escaparate con select de conceptos existentes
- * @param {boolean} esFilaInicial - Indica si es la primera fila del escaparate
- * @param {Function} generarOpcionesMateriales - Función para generar las opciones de materiales
- * @param {Function} generarOpcionesConceptos - Función para generar opciones de conceptos existentes
- * @returns {string} Template HTML del elemento
- */
+// Genera el template HTML para un elemento de escaparate con select de conceptos existentes
 function generarTemplateElementoExistente(esFilaInicial = true, generarOpcionesMateriales, generarOpcionesConceptos) {
     return `
         <tr class="border-b text-center elemento-escaparate">
@@ -277,98 +253,9 @@ function generarTemplateElementoExistente(esFilaInicial = true, generarOpcionesM
     `;
 }
 
-/**
- * Genera el template HTML para una fila de PDV (DEPRECATED - Usar nueva estructura)
- * @param {boolean} esFilaInicial - Indica si es la primera fila de la tabla
- * @param {Function} generarOpcionesMateriales - Función para generar las opciones de materiales
- * @returns {string} Template HTML de la fila
- */
-function generarTemplateFilaPDV(esFilaInicial = false, generarOpcionesMateriales) {
-    return `
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="file" class="file-input hidden">
-                <button class="upload-btn w-full p-1.5 text-sm border border-gray-300 rounded bg-gray-50">
-                    Subir foto
-                </button>
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <select class="isla w-full p-1.5 border rounded">
-                    <option value="">Seleccionar</option>
-                    <option value="GC">GC</option>
-                    <option value="TFE">TFE</option>
-                    <option value="LZT">LZT</option>
-                    <option value="FTV">FTV</option>
-                    <option value="HIERRO">HIERRO</option>
-                    <option value="GOMERA">GOMERA</option>
-                    <option value="PALMA">PALMA</option>
-                </select>
-            ` : ''}
-        </td>
-        <td class="p-2">
-            <input type="text" class="w-full p-1.5 border rounded text-sm" placeholder="Concepto">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Alto">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="dimension w-16 p-1.5 border rounded text-sm" placeholder="Ancho">
-        </td>
-        <td class="p-2">
-            <select class="material w-full p-1.5 border rounded">
-                <option value="">Seleccionar</option>
-                ${generarOpcionesMateriales ? generarOpcionesMateriales() : ''}
-            </select>
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="precio-mp w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="precio-unitario w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" class="unidades w-16 p-1.5 border rounded text-sm" value="1">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="margen w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            <input type="number" step="0.01" class="total w-20 p-1.5 border rounded">
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="text" class="escaparate w-24 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="number" step="0.01" class="total-escaparate w-24 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="number" step="0.01" class="montaje w-20 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            ${esFilaInicial ? `
-                <input type="text" class="obs w-20 p-1.5 border rounded">
-            ` : ''}
-        </td>
-        <td class="p-2">
-            <button class="eliminar-fila text-red-500 hover:text-red-700">
-                <i class="fas fa-times"></i>
-            </button>
-        </td>
-    `;
-}
-
 // Exponer las funciones globalmente
 window.Templates = {
     generarTemplatePDV,
-    generarTemplateFilaPDV,
     generarTemplateEscaparate,
     generarTemplateElemento,
     generarTemplateElementoExistente

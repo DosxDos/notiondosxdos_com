@@ -1,6 +1,4 @@
-/**
- * Clase para cargar y manejar datos del presupuesto
- */
+// Clase para cargar y manejar datos del presupuesto
 class PresupuestoLoader {
     constructor() {
         this.datosPresupuesto = null;
@@ -25,9 +23,7 @@ class PresupuestoLoader {
         }
     }
 
-    /**
-     * Carga los datos del presupuesto y actualiza la UI
-     */
+    // Carga los datos del presupuesto y actualiza la UI
     async cargarDatosPresupuesto() {
         // Mostrar spinner de carga
         if (window.spinner) {
@@ -52,8 +48,7 @@ class PresupuestoLoader {
                 return;
             }
             
-            // Cargar elementos existentes antes de cargar el presupuesto
-            // para que estén disponibles al procesar los elementos del escaparate
+            // Cargar elementos existentes antes de cargar el presupuesto para que estén disponibles al procesar los elementos del escaparate
             if (window.presupuestosTabla) {
                 await window.presupuestosTabla.cargarElementosExistentes();
                 console.log('Elementos existentes cargados antes del presupuesto');
@@ -149,8 +144,7 @@ class PresupuestoLoader {
         // Cargar escaparates si existen
         if (pdvData.escaparates && pdvData.escaparates.length > 0) {
             // Los escaparates permanecen ocultos por defecto aunque haya datos
-            // El usuario debe hacer clic en "Desplegar escaparates" para verlos
-            
+            // El usuario debe hacer clic en "Desplegar escaparates" para verlos       
             pdvData.escaparates.forEach((escaparate, escaparateIndex) => {
                 this.agregarYCargarEscaparate(pdvIndex, escaparate, escaparateIndex);
             });
@@ -265,11 +259,7 @@ class PresupuestoLoader {
         }
     }
     
-    /**
-     * Busca el nombre descriptivo de un elemento basado en su ID
-     * @param {string} elementoId - ID del elemento a buscar
-     * @returns {string} - Nombre descriptivo del elemento o cadena vacía
-     */
+    // Busca el nombre descriptivo de un elemento basado en su ID
     buscarNombreElemento(elementoId) {
         if (!elementoId) return '';
         
@@ -442,20 +432,7 @@ class PresupuestoLoader {
         }
     }
     
-    // Método retenido para compatibilidad pero ahora con la nueva estructura
-    agregarEscaparates(pdvData, index) {
-        // Este método se mantiene por compatibilidad, pero ahora usa la nueva estructura
-        this.cargarDatosPDV(pdvData, index);
-    }
-    
-    // Método retenido para compatibilidad
-    inicializarCamposEscaparate(fila, escaparate) {
-        console.log('Método inicializarCamposEscaparate es obsoleto con la nueva estructura');
-    }
-    
-    /**
-     * Registra que un PDV ha sido cargado y verifica si todos los PDVs han sido cargados
-     */
+    // Registra que un PDV ha sido cargado y verifica si todos los PDVs han sido cargados
     registrarPDVCargado() {
         this.pdvsCargados++;
         
@@ -466,9 +443,7 @@ class PresupuestoLoader {
         }
     }
     
-    /**
-     * Inicializa los cálculos automáticos después de cargar todos los datos
-     */
+    // Inicializa los cálculos automáticos después de cargar todos los datos
     inicializarCalculosAutomaticos() {
         // Esperar un momento para asegurar que el DOM está completamente actualizado
         setTimeout(() => {

@@ -1,19 +1,10 @@
-/**
- * Calculadora.js
- * Clase para centralizar todas las operaciones relacionadas con cálculos 
- * de presupuestos, totales, precios, etc.
- */
+// Clase para centralizar todas las operaciones relacionadas con cálculos de presupuestos, totales, precios, etc.
 class Calculadora {
     constructor() {
         this.materialesDisponibles = {};
     }
 
-    /**
-     * Actualiza el precio de materia prima basado en el material seleccionado
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Actualiza el precio de materia prima basado en el material seleccionado
     actualizarPrecioMP(elementoRow, pdvIndex, escaparateIndex) {
         const material = elementoRow.querySelector('.material');
         const precioMP = elementoRow.querySelector('.precio-mp');
@@ -24,12 +15,7 @@ class Calculadora {
         }
     }
 
-    /**
-     * Calcula el precio unitario basado en dimensiones y precio MP
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Calcula el precio unitario basado en dimensiones y precio MP
     calcularPrecioUnitario(elementoRow, pdvIndex, escaparateIndex) {
         const alto = parseFloat(elementoRow.querySelector('.alto').value.replace(',', '.')) || 0;
         const ancho = parseFloat(elementoRow.querySelector('.ancho').value.replace(',', '.')) || 0;
@@ -42,12 +28,7 @@ class Calculadora {
         this.calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex);
     }
 
-    /**
-     * Calcula los totales para un elemento (fila) específico
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Calcula los totales para un elemento (fila) específico
     calcularTotalesElemento(elementoRow, pdvIndex, escaparateIndex) {
         const precioUnitario = parseFloat(elementoRow.querySelector('.precio-unitario').value.replace(',', '.')) || 0;
         const unidades = parseInt(elementoRow.querySelector('.unidades').value.replace(',', '.')) || 1;
@@ -58,11 +39,7 @@ class Calculadora {
         this.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
     }
 
-    /**
-     * Actualiza el total de un escaparate sumando todos sus elementos
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Actualiza el total de un escaparate sumando todos sus elementos
     actualizarTotalEscaparate(pdvIndex, escaparateIndex) {
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
         if (!pdvDiv) return;
@@ -90,10 +67,7 @@ class Calculadora {
         this.actualizarTotalPDV(pdvIndex);
     }
 
-    /**
-     * Actualiza el total de un PDV sumando todos sus escaparates y el montaje
-     * @param {number} pdvIndex - Índice del PDV
-     */
+    // Actualiza el total de un PDV sumando todos sus escaparates y el montaje
     actualizarTotalPDV(pdvIndex) {
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
         if (!pdvDiv) return;
@@ -110,7 +84,6 @@ class Calculadora {
             totalEscaparatesInput.value = totalEscaparates.toFixed(2);
         }
         
-        // Ya no calculamos ni mostramos el Total PDV
         // Actualizar precios de materiales para cada escaparate
         pdvDiv.querySelectorAll('.escaparate-item').forEach(escaparateItem => {
             const escaparateIndex = parseInt(escaparateItem.dataset.escaparateIndex);
@@ -126,9 +99,7 @@ class Calculadora {
         this.recalcularTotales();
     }
 
-    /**
-     * Recalcula el total general sumando todos los PDVs
-     */
+    // Recalcula el total general sumando todos los PDVs
     recalcularTotales() {
         // Calcular el total general sumando todos los totales de escaparates
         const totalesEscaparates = Array.from(document.querySelectorAll('.total-escaparates-pdv'))
@@ -143,10 +114,8 @@ class Calculadora {
         }
     }
 
-    /**
-     * Inicializa los cálculos para todos los elementos de la página
-     * Recalcula automáticamente precios unitarios y totales sin necesidad de modificar los campos
-     */
+    // Inicializa los cálculos para todos los elementos de la página
+    // Recalcula automáticamente precios unitarios y totales sin necesidad de modificar los campos
     inicializarCalculos() {
         // Procesar cada PDV
         document.querySelectorAll('.tabla-pdv').forEach(pdvDiv => {
@@ -174,20 +143,14 @@ class Calculadora {
         this.recalcularTotales();
     }
 
-    /**
-     * Genera las opciones HTML para el selector de materiales
-     * @returns {string} - HTML con las opciones de materiales
-     */
+    // Genera las opciones HTML para el selector de materiales
     generarOpcionesMateriales() {
         return Object.entries(this.materialesDisponibles)
             .map(([nombre, precio]) => `<option value="${nombre}">${nombre}</option>`)
             .join('');
     }
 
-    /**
-     * Actualiza la lista de materiales disponibles con los datos del servidor
-     * @param {Object} data - Datos recibidos del servidor
-     */
+    // Actualiza la lista de materiales disponibles con los datos del servidor
     actualizarMaterialesDisponibles(data) {
         this.materialesDisponibles = {};
         if (data.materiales && Array.isArray(data.materiales)) {
@@ -199,9 +162,7 @@ class Calculadora {
         }
     }
 
-    /**
-     * Actualiza los selectores de materiales en el DOM
-     */
+    // Actualiza los selectores de materiales en el DOM
     actualizarSelectoresMateriales() {
         document.querySelectorAll('.material').forEach(select => {
             const currentValue = select.value;

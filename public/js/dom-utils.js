@@ -1,53 +1,22 @@
-/**
- * Módulo de utilidades para manipulación del DOM
- * Centraliza operaciones comunes como búsqueda, creación y manipulación de elementos
- */
-
+ // Módulo de utilidades para manipulación del DOM
+ // Centraliza operaciones comunes como búsqueda, creación y manipulación de elementos
 class DomUtils {
-    /**
-     * Encuentra un elemento por selector
-     * @param {string} selector - Selector CSS
-     * @param {Element} [parent=document] - Elemento padre (opcional)
-     * @returns {Element|null} - Elemento encontrado o null
-     */
+    // Encuentra un elemento por selector
     static find(selector, parent = document) {
         return parent.querySelector(selector);
     }
 
-    /**
-     * Encuentra todos los elementos que coinciden con un selector
-     * @param {string} selector - Selector CSS
-     * @param {Element} [parent=document] - Elemento padre (opcional)
-     * @returns {NodeList} - Lista de elementos encontrados
-     */
+    // Encuentra todos los elementos que coinciden con un selector
     static findAll(selector, parent = document) {
         return parent.querySelectorAll(selector);
     }
 
-    /**
-     * Encuentra un elemento por atributos de datos
-     * @param {string} attribute - Nombre del atributo data- sin el prefijo "data-"
-     * @param {string} value - Valor del atributo
-     * @param {Element} [parent=document] - Elemento padre (opcional)
-     * @returns {Element|null} - Elemento encontrado o null
-     */
+    // Encuentra un elemento por atributos de datos
     static findByData(attribute, value, parent = document) {
         return parent.querySelector(`[data-${attribute}="${value}"]`);
     }
 
-    /**
-     * Crea un elemento DOM con propiedades y atributos
-     * @param {string} tagName - Nombre de la etiqueta HTML
-     * @param {Object} [options={}] - Opciones como clases, atributos, etc.
-     * @param {string|string[]} [options.classes] - Clases CSS
-     * @param {Object} [options.attributes] - Atributos HTML
-     * @param {Object} [options.dataset] - Atributos data-*
-     * @param {Object} [options.style] - Estilos CSS
-     * @param {string} [options.text] - Texto contenido
-     * @param {string} [options.html] - HTML contenido
-     * @param {Element[]} [options.children] - Elementos hijos
-     * @returns {Element} - Elemento creado
-     */
+    // Crea un elemento DOM con propiedades y atributos
     static create(tagName, options = {}) {
         const element = document.createElement(tagName);
         
@@ -98,23 +67,14 @@ class DomUtils {
         return element;
     }
 
-    /**
-     * Elimina todos los hijos de un elemento
-     * @param {Element} element - Elemento del que se eliminarán los hijos
-     */
+    // Elimina todos los hijos de un elemento
     static empty(element) {
         while (element.firstChild) {
             element.removeChild(element.firstChild);
         }
     }
 
-    /**
-     * Añade un evento a un elemento con manejo de errores
-     * @param {Element} element - Elemento al que se añadirá el evento
-     * @param {string} eventType - Tipo de evento (click, change, etc.)
-     * @param {Function} handler - Función manejadora
-     * @param {Object} [options] - Opciones del addEventListener
-     */
+    // Añade un evento a un elemento con manejo de errores
     static addEvent(element, eventType, handler, options) {
         if (!element) return;
         
@@ -127,12 +87,7 @@ class DomUtils {
         }, options);
     }
 
-    /**
-     * Añade múltiples eventos a un elemento
-     * @param {Element} element - Elemento al que se añadirán eventos
-     * @param {Object} events - Objeto con tipos de eventos como claves y manejadores como valores
-     * @param {Object} [options] - Opciones del addEventListener
-     */
+    // Añade múltiples eventos a un elemento
     static addEvents(element, events, options) {
         if (!element) return;
         
@@ -141,12 +96,7 @@ class DomUtils {
         });
     }
 
-    /**
-     * Obtiene un valor de un input, select o textarea, con conversión de tipos básica
-     * @param {Element} element - Elemento del que se obtendrá el valor
-     * @param {string} [type] - Tipo de dato al que convertir ('number', 'boolean', etc.)
-     * @returns {*} - Valor obtenido convertido al tipo especificado
-     */
+    // Obtiene un valor de un input, select o textarea, con conversión de tipos básica
     static getValue(element, type) {
         if (!element) return null;
         
@@ -172,11 +122,7 @@ class DomUtils {
         return value;
     }
 
-    /**
-     * Establece un valor en un input, select o textarea
-     * @param {Element} element - Elemento en el que se establecerá el valor
-     * @param {*} value - Valor a establecer
-     */
+    // Establece un valor en un input, select o textarea
     static setValue(element, value) {
         if (!element) return;
         
@@ -191,11 +137,7 @@ class DomUtils {
         }
     }
 
-    /**
-     * Obtiene los valores de un formulario como objeto
-     * @param {Element} formElement - Elemento del formulario
-     * @returns {Object} - Objeto con los valores del formulario
-     */
+    // Obtiene los valores de un formulario como objeto
     static getFormValues(formElement) {
         if (!formElement) return {};
         
@@ -209,11 +151,7 @@ class DomUtils {
         return values;
     }
 
-    /**
-     * Rellena un formulario con valores de un objeto
-     * @param {Element} formElement - Elemento del formulario
-     * @param {Object} values - Objeto con los valores a establecer
-     */
+    // Rellena un formulario con valores de un objeto
     static setFormValues(formElement, values) {
         if (!formElement || !values) return;
         

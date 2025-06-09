@@ -1,25 +1,6 @@
-/**
- * Utilidades y funciones de soporte para tablas de presupuestos
- * 
- * NOTA: Las funciones de generación de HTML se han movido a templates.js
- * y están disponibles a través del objeto global window.Templates
- */
-
-// Mantener compatibilidad con el código existente redirigiendo a Templates
-window.generarTemplatePDV = (index, obtenerNombrePDV) => window.Templates.generarTemplatePDV(index, obtenerNombrePDV);
-window.generarTemplateFilaPDV = (esFilaInicial, generarOpcionesMateriales) => window.Templates.generarTemplateFilaPDV(esFilaInicial, generarOpcionesMateriales);
-window.generarTemplateEscaparate = (pdvIndex, escaparateIndex) => window.Templates.generarTemplateEscaparate(pdvIndex, escaparateIndex);
-window.generarTemplateElemento = (esFilaInicial, generarOpcionesMateriales) => window.Templates.generarTemplateElemento(esFilaInicial, generarOpcionesMateriales);
-
-/**
- * Utilidades para tablas de presupuestos
- */
+// Utilidades y funciones de soporte para tablas de presupuestos
 class TableUtils {
-    /**
-     * Maneja la subida de archivos y actualiza el botón
-     * @param {Event} event - Evento de cambio del input file
-     * @param {HTMLElement} button - Botón de subida que se actualizará
-     */
+    // Maneja la subida de archivos y actualiza el botón
     static handleFileUpload(event, button) {
         const file = event.target.files[0];
         if (file) {
@@ -28,10 +9,7 @@ class TableUtils {
         }
     }
     
-    /**
-     * Actualiza los índices de todos los PDVs para mantener la coherencia
-     * después de eliminar un PDV
-     */
+    // Actualiza los índices de todos los PDVs para mantener la coherencia después de eliminar un PDV
     static actualizarIndicesPDV() {
         // Obtener todos los elementos PDV en el DOM
         const pdvDivs = document.querySelectorAll('.tabla-pdv');
@@ -62,21 +40,13 @@ class TableUtils {
                     const puntosDeVenta = window.presupuestoLoader.datosPresupuesto.puntos_de_venta;
                     if (Array.isArray(puntosDeVenta) && puntosDeVenta[viejoIndex]) {
                         // Solo es necesario hacer algo si los índices no coinciden
-                        // Los datos ya fueron reordenados por el splice anterior
                     }
                 }
             }
         });
     }
     
-    /**
-     * Actualiza un select con opciones a partir de un array de datos
-     * @param {HTMLSelectElement} selectElement - Elemento select a actualizar
-     * @param {Array} opciones - Array de opciones (objetos con id y nombre)
-     * @param {Function} obtenerTexto - Función para obtener el texto de la opción
-     * @param {Function} obtenerValor - Función para obtener el valor de la opción
-     * @param {boolean} mantenerPrimeraOpcion - Si se debe mantener la primera opción del select
-     */
+    // Actualiza un select con opciones a partir de un array de datos
     static actualizarSelect(selectElement, opciones, obtenerTexto, obtenerValor, mantenerPrimeraOpcion = true) {
         if (!selectElement || !Array.isArray(opciones)) return;
         
@@ -103,12 +73,7 @@ class TableUtils {
         }
     }
     
-    /**
-     * Encuentra un elemento específico dentro de la estructura de PDVs
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate (opcional)
-     * @returns {Object} Objeto con referencias a los elementos encontrados
-     */
+    // Encuentra un elemento específico dentro de la estructura de PDVs
     static encontrarElementos(pdvIndex, escaparateIndex = null) {
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
         if (!pdvDiv) return { pdvDiv: null };
@@ -126,13 +91,7 @@ class TableUtils {
         return result;
     }
     
-    /**
-     * Ordena un array de objetos por una propiedad específica
-     * @param {Array} array - Array a ordenar
-     * @param {string|Function} propOrFn - Propiedad o función para obtener el valor de ordenación
-     * @param {boolean} ascending - Si el orden es ascendente (true) o descendente (false)
-     * @returns {Array} Array ordenado
-     */
+    // Ordena un array de objetos por una propiedad específica
     static ordenarArray(array, propOrFn, ascending = true) {
         if (!Array.isArray(array)) return [];
         
@@ -166,17 +125,10 @@ class TableUtils {
 // Exponer la clase globalmente
 window.TableUtils = TableUtils;
 
-/**
- * Manejadores de eventos para elementos de las tablas de presupuestos
- * Esta clase ayuda a reducir la duplicación en presupuestos-tabla.js
- */
+// Manejadores de eventos para elementos de las tablas de presupuestos
+// Esta clase ayuda a reducir la duplicación en presupuestos-tabla.js
 class EventHandlers {
-    /**
-     * Inicializa todos los eventos para un elemento (fila)
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     */
+    // Inicializa todos los eventos para un elemento (fila)
     static initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex) {
         // Manejo de cálculos
         const material = elementoRow.querySelector('.material');
@@ -220,13 +172,7 @@ class EventHandlers {
         }
     }
     
-    /**
-     * Inicializa eventos para campos específicos del elemento existente
-     * @param {Element} elementoRow - Fila del elemento
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     * @param {Function} actualizarCamposCallback - Función para actualizar campos
-     */
+    // Inicializa eventos para campos específicos del elemento existente
     static initializeElementoExistenteEvents(elementoRow, pdvIndex, escaparateIndex, actualizarCamposCallback) {
         // Evento para seleccionar concepto existente
         const conceptoSelect = elementoRow.querySelector('.concepto-select');
@@ -240,13 +186,7 @@ class EventHandlers {
         this.initializeElementoEvents(elementoRow, pdvIndex, escaparateIndex);
     }
     
-    /**
-     * Inicializa eventos para un escaparate
-     * @param {Element} escaparateItem - Elemento del escaparate
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {number} escaparateIndex - Índice del escaparate
-     * @param {Object} callbacks - Callbacks para eventos: agregarElemento, agregarElementoExistente
-     */
+    // Inicializa eventos para un escaparate
     static initializeEscaparateEvents(escaparateItem, pdvIndex, escaparateIndex, callbacks) {
         if (!escaparateItem) return;
         
@@ -298,12 +238,7 @@ class EventHandlers {
         }
     }
     
-    /**
-     * Inicializa eventos para un PDV
-     * @param {Element} pdvDiv - Elemento del PDV
-     * @param {number} pdvIndex - Índice del PDV
-     * @param {Object} callbacks - Callbacks para eventos: agregarEscaparate, cargarOpcionesPDV
-     */
+    // Inicializa eventos para un PDV
     static initializePDVEvents(pdvDiv, pdvIndex, callbacks) {
         if (!pdvDiv) return;
         
