@@ -86,6 +86,28 @@ class PresupuestoSubmit {
             datosActualizados.C_digo = codigoOT;
         }
         
+        // IMPORTANTE: Añadir la propiedad Material a cada escaparate para que funcione con el backend
+        if (datosActualizados.puntos_de_venta && Array.isArray(datosActualizados.puntos_de_venta)) {
+            datosActualizados.puntos_de_venta.forEach(pdv => {
+                if (pdv.escaparates && Array.isArray(pdv.escaparates)) {
+                    pdv.escaparates.forEach(escaparate => {
+                        // Si el escaparate tiene elemento_de_escaparate con materiales, extraer el nombre del material
+                        if (escaparate.elemento_de_escaparate && 
+                            escaparate.elemento_de_escaparate.materiales && 
+                            escaparate.elemento_de_escaparate.materiales.length > 0 &&
+                            escaparate.elemento_de_escaparate.materiales[0].Material) {
+                            
+                            // Añadir la propiedad Material directamente al escaparate
+                            escaparate.Material = escaparate.elemento_de_escaparate.materiales[0].Material;
+                        } else if (escaparate.Nombre_del_escaparate) {
+                            // Si no hay material disponible, usar el nombre del escaparate como fallback
+                            escaparate.Material = escaparate.Nombre_del_escaparate;
+                        }
+                    });
+                }
+            });
+        }
+        
         return datosActualizados;
     }
 
@@ -316,6 +338,16 @@ class PresupuestoSubmit {
         try {
             // Enviar los datos al endpoint correspondiente y recibir el PDF como Blob
             const pdfBlob = await window.apiServices.enviarPresupuestoActualizado(codigoOT, datos);
+            
+            // También enviamos los datos para crear el presupuesto en Notion
+            try {
+                const respuestaNotion = await window.apiServices.crearPresupuestoEnNotion(codigoOT, datos);
+                console.log('Presupuesto creado en Notion:', respuestaNotion);
+            } catch (notionError) {
+                console.error('Error al crear presupuesto en Notion:', notionError);
+                // No interrumpimos el flujo principal si hay error en Notion
+            }
+            
             console.log('PDF recibido correctamente, tamaño:', pdfBlob.size);
             return pdfBlob;
         } catch (error) {

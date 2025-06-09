@@ -1,0 +1,213 @@
+{
+  "objetoRecibidoDelBackend": {
+    "status": true,
+    "code": 200,
+    "message": "Datos obtenidos correctamente",
+    "data": {
+      "data": [
+        {
+          "C_digo": "31281",
+          "Prefijo": "OT",
+          "Deal_Name": "ESCAPARATES \"LOEWE\" ELIXIR MARZO, 31281",
+          "Stage": "Facturada",
+          "Fecha_de_previsi_n": "2025-03-03",
+          "N_mero_del_cliente": "43000012",
+          
+          "Account_Name": {
+            "name": "PERFUMES LOEWE, S.A.",
+            "id": "707987000000885268"
+          },
+          "Empresa": {
+            "name": "PERFUMES LOEWE, S.A.",
+            "id": "707987000000885268"
+          },
+          
+          "C_digo_postal_de_facturaci_n": "28034",
+          "Provincia_de_facturaci_n": "Madrid",
+          "Pa_s_de_facturaci_n": "España",
+          "Ciudad_de_facturaci_n": "Madrid",
+          
+          "Contact_Name": {
+            "name": "Veronica Sanz Sanz Betanzos",
+            "id": "707987000015079057"
+          },
+          
+          "Firma": "LOEWE",
+          "Navision": "24293",
+          "Tipo_de_OT": "ESC",
+          
+          "cliente": {
+            "CIF_NIF1": "A79287124",
+            "Billing_Street": "Calle Isla De Java, 33",
+            "Billing_Code": "28034",
+            "Billing_City": "Madrid",
+            "Billing_State": "Madrid",
+            "Billing_Country": "España"
+          },
+          
+          "contacto": {
+            "Email": "veronica.sanz@perfumesloewe.com",
+            "Full_Name": "Veronica Sanz Sanz Betanzos"
+          },
+          
+          "puntos_de_venta": [
+            {
+              "id": "707987000011363271",
+              
+              "PDV_relacionados": {
+                "name": "Topaz III 32, 2331",
+                "id": "707987000000596383"
+              },
+              
+              "lineas": [
+                {
+                  "Fotos": "https://dosxdos.app.iidos.com/fotos_y_firmas.php?ruta=GRAN_CANARIA_(B)&linea=11828&ot=31281&lineaActividad=11828",
+                  "Minutos_actuaci_n": 40
+                }
+              ],
+              
+              "escaparates": [
+                {
+                  "id": "707987000005016373",
+                  "Nombre_del_escaparate": "ESC6",
+                  "Name": "Topaz nº32 III_ESC6_lateral derecho_187",
+                  "Tipo_de_escaparate": "PEQUEÑO",
+                  "C_digo_del_escaparate": "187",
+                  
+                  "Alto_del_Suelo": 50,
+                  "Ancho_del_Suelo": 248,
+                  "Superior": 248,
+                  "Inferior": 248,
+                  "Lateral_Izquierdo": 215,
+                  "Lateral_Derecho": 215,
+                  
+                  "elemento_de_escaparate": {
+                    "id": "707987000017174969",
+                    "name": "2",
+                    "materiales": [
+                      {
+                        "Material": "METACRILATO TRANSP. 10MM",
+                        "Precio": 65.41
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  
+  "objetoEnviadoAlBackend": {
+    "C_digo": "31281",
+    "Prefijo": "OT",
+    "Deal_Name": "ESCAPARATES \"LOEWE\" ELIXIR MARZO, 31281",
+    "Stage": "Facturada",
+    "Fecha_de_previsi_n": "2025-03-03",
+    "N_mero_del_cliente": "43000012",
+
+    "Account_Name": {
+      "name": "PERFUMES LOEWE, S.A.",
+      "id": "707987000000885268"
+    },
+    
+    "C_digo_postal_de_facturaci_n": "28034",
+    "Provincia_de_facturaci_n": "Madrid",
+    "Pa_s_de_facturaci_n": "España",
+    "Ciudad_de_facturaci_n": "Madrid",
+    
+    "Contact_Name": {
+      "name": "Veronica Sanz Sanz Betanzos",
+      "id": "707987000015079057"
+    },
+    
+    "Firma": "LOEWE",
+    "Navision": "24293",
+    "Tipo_de_OT": "ESC",
+    
+    "cliente": {
+      "CIF_NIF1": "A79287124",
+      "Billing_Street": "Calle Isla De Java, 33",
+      "Billing_Code": "28034",
+      "Billing_City": "Madrid",
+      "Billing_State": "Madrid",
+      "Billing_Country": "España"
+    },
+    
+    "contacto": {
+      "Email": "veronica.sanz@perfumesloewe.com",
+      "Full_Name": "Veronica Sanz Sanz Betanzos"
+    },
+    
+    "puntos_de_venta": [
+      {
+        "id": "707987000011363271",
+        
+        "PDV_relacionados": {
+          "name": "Topaz III 32, 2331",
+          "id": "707987000000596383"
+        },
+        
+        "Isla": "GC",
+        "Montaje": 150,
+        "OBS": "Observaciones adicionales",
+        
+        "Total_Escaparates": 320.50,
+        
+        "lineas": [
+          {
+            "Minutos_actuaci_n": 40
+          }
+        ],
+        
+        "escaparates": [
+          {
+            "id": "707987000005016373",
+            
+            "Nombre_del_escaparate": "ESC6",
+            "Name": "Topaz nº32 III_ESC6_lateral derecho_187",
+            "Tipo_de_escaparate": "PEQUEÑO",
+            "C_digo_del_escaparate": "187",
+            
+            "Alto_del_Suelo": 50,
+            "Ancho_del_Suelo": 248,
+            "Superior": 248,
+            "Inferior": 248,
+            "Lateral_Izquierdo": 215,
+            "Lateral_Derecho": 215,
+            
+            "Total_Escaparate": 150.25,
+            
+            "Precio_material": 75.12,
+            "unidades_material": 1,
+            
+            "elementos": [
+              {
+                "Nombre_del_elemento": "Metacrilato 10mm",
+                "Alto": 50,
+                "Ancho": 248,
+                "Material": "METACRILATO TRANSP. 10MM",
+                "Precio_MP": 65.41,
+                "Precio_Unitario": 81.01,
+                "Unidades": 1,
+                "Total": 81.01
+              },
+              {
+                "Nombre_del_elemento": "Otro elemento",
+                "Alto": 35,
+                "Ancho": 120,
+                "Material": "VINILO",
+                "Precio_MP": 45.50,
+                "Precio_Unitario": 19.11,
+                "Unidades": 2,
+                "Total": 38.22
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+} 

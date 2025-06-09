@@ -125,6 +125,21 @@ class ApiServices {
             body: JSON.stringify(datosFormateados)
         });
     }
+
+    // Crea el presupuesto en Notion con los datos actualizados
+    async crearPresupuestoEnNotion(codigoOT, datos) {
+        // Estructurar los datos como espera el backend: {data: {data: [datos]}}
+        const datosFormateados = {
+            data: {
+                data: [datos]
+            }
+        };
+        
+        return await this.fetchWithAuth(`/api/crear/presupuesto/ot`, {
+            method: 'POST',
+            body: JSON.stringify(datosFormateados)
+        });
+    }
 }
 
 // Crear instancia global
