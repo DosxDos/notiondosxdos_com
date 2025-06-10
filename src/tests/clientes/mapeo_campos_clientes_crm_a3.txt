@@ -1,0 +1,89 @@
+A3 - CRM - DOSXDOS.APP (WEBHOOK)
+
+Nombre - Nombre de Cliente (Account_Name) - nombreCliente
+NIF - CIF/ NIF (CIF_NIF1) - nif
+TipoDocumentoNIF - xxx (02) - tipoNif
+Telefono - Teléfono (Phone) - tel
+Telefono2 - Teléfono 2 (Phone_2) - tel2
+
+Caracteristica2 (Clase) - Clase de cliente (Tipo_de_empresa) - tipoCliente
+MDL - Marca de lujo
+PRF - Perfumería
+OTROS - OTROS
+
+Param1 (Contacto relacionado) - Contacto relacionado (Contacto_relacionado) - contactoRelacionado
+
+Obsoleto (F-T) - Cliente activo? (Cliente_activo) - obsoleto
+
+Grupo contable (Caracteristica1) - Grupo contable cliente (Grupo_contable_cliente) - grupoContableCliente
+ALUVISIO - ALUVISION
+BNI - BNI
+E COMER - E COMER
+FIRMA - FIRMA
+GRUPO - GRUPO
+OTROS - OTROS
+PARTICUL - PARTICULARES
+SECTOR - SECTOR
+WEB - WEB
+
+Impuesto (Grupo_registro_IVA_neg) - xxx - impuesto
+// IMPUESTOS EN CRM (HEREDADOS DE NAVISION) - A3
+
+IGIC
+TipoOperacion - VIGIC (Operaciones interiores IGIC)
+TipoImpuesto - IGIC7 (IGIC general 7%)
+
+IVA
+TipoOperacion - VNAC (Operac.interiores sujetas)
+TipoImpuesto - ORD21 (Ordinario 21 %)
+
+UE
+TipoOperacion - VNOSUJ (Operaciones no sujetas)
+TipoImpuesto - NOSUJETO (No sujeto)
+
+EXENTO
+TipoOperacion - VNOSUJ (Operaciones no sujetas)
+TipoImpuesto - NOSUJETO (No sujeto)
+
+NO SUJETO IVA
+TipoOperacion - VNOSUJ (Operaciones no sujetas)
+TipoImpuesto - NOSUJETO (No sujeto)
+
+NO SUJETO IGIC
+TipoOperacion - VNOSUJ (Operaciones no sujetas)
+TipoImpuesto - NOSUJETO (No sujeto)
+
+FormaPago - Código términos pago (C_digo_t_rminos_pago) - FormaPago
+crm-a3
+Due on receipt - 3061 (Due on receipt)
+Net 15 - 15
+Net 30 - 30
+Net 45 - 45
+Net 60 - 60
+Net 80 - 3062
+Net 90 - 90
+Net 120 - 120
+Net 150 - 150
+
+DocumentoPago - Cód. forma pago (C_d_forma_pago) - formaPago
+A3 - CRM
+C (Contado) - CONTADO
+CONF (Confirming) - CONFIRMING
+T (Talón) - TALÓN
+P (Pagaré) - PAGARE
+TR (Transferencia bancaria) - TRANSF
+FA (Factoring) - FACTORING
+R (Recibo) - RECIBO
+
+Param2 (Descuento realización) - Descuento realización (Descuento_realizaci_n) - descuentoRealizacion
+Param3 (Descuento montaje) - Descuento montaje (Descuento_montaje) - Descuento_montaje
+Param4 (Grupo contable negocio) - Grupo contable negocio (Grupo_contable) - grupoContableNegocio
+Representante - Código vendedor (C_digo_vendedor) - codRepresentante (predetermiando: 1 siempre, si es null o vacío es 1, si se envía otro dato distinto a 1 pues será ese dato - El código será el que se genera en A3 en el módulo de representante)
+Email - Correo electrónico (Correo_electr_nico) - email
+
+Direccion - Domicilio de facturación (Billing_Street) + Ciudad de facturación (Billing_City)
+Fax - Fax - fax
+Direccion2 - Domicilio de envío (Shipping_Street) + Ciudad de envío (Shipping_City)
+"CodigoPais": "ES", codPais
+"CodigoMoneda": "EURO", codMoneda
+CodigoPostal - Código de facturación (Billing_Code) - codPostal
