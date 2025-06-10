@@ -2,6 +2,8 @@ import respuesta from '../utils/respuesta_util.js';
 import ots_notion_service from '../services/ots_notion_service.js';
 import Zoho from './../zoho_api/Zoho.js'; // Ajusta la ruta según la ubicación real del archivo Zoho.js
 import axios from 'axios';
+import dotenv from 'dotenv';
+dotenv.config(); // Cargar variables de entorno
 
 class ots_notion_controller {
     constructor(body) {
@@ -20,6 +22,8 @@ class ots_notion_controller {
     async crearOt() {
         return new Promise(async (resolve) => {
             const otsNotionService = new ots_notion_service(this.body);
+            console.log("Propiedad db del servicio: ", otsNotionService.db);
+            console.log("Objeto Cliente de Notion: ", otsNotionService.notion);
             const responseNotion = await otsNotionService.crearOt();
             const respuestas = new respuesta(responseNotion.message, responseNotion.data, responseNotion.page, responseNotion.limit);
             const response = respuestas.responder(responseNotion);

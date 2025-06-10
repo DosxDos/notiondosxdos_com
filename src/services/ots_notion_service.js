@@ -5,6 +5,8 @@ import { mapearPresupuestosOT } from "./../mappers/ot.js";
 import { mapearPresupuestosPuntoDeVenta } from "./../mappers/puntos_de_venta.js";
 import { mapearPresupuestosMaterial } from "./../mappers/materiales.js";
 import { mapearPresupuestosClientes } from "./../mappers/clientes.js";
+import dotenv from 'dotenv';
+dotenv.config(); // Cargar variables de entorno     
 import { diccionarioCamposNotion } from "./../constantes/constantes.js";
 
 class ots_notion_service {
@@ -25,7 +27,9 @@ class ots_notion_service {
             Presupuesto: process.env.PRESUPUESTOS_ESCAPARATES,
         };
 
-        this.notion = new Notion(this.db);
+        this.notion = new Client({
+            auth: process.env.API_KEY,
+        });
 
         // Enlazar contexto si es necesario
         this.crearOt = this.crearOt.bind(this);
@@ -66,7 +70,7 @@ class ots_notion_service {
 
         const clienteZoho = this.body.data.data[0].cliente;
         console.log("Cliente Zoho:", clienteZoho);
-        const codigoCliente = "zcrm_"+clienteZoho.id;
+        const codigoCliente = "zcrm_" + clienteZoho.id;
 
         console.log("Código Cliente: ", codigoCliente);
 
@@ -87,7 +91,7 @@ class ots_notion_service {
     async siNoExistePuntoDeVentaCrearSinoRelacionar(pdvData) {
         console.log("Puntos de venta en Notion (test):");
 
-        const codigoPDV = "zcrm_"+pdvData.id;
+        const codigoPDV = "zcrm_" + pdvData.id;
         console.log("Código PDV: ", codigoPDV);
         if (!codigoPDV) return null;
 
