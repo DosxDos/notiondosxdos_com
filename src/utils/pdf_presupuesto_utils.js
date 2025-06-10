@@ -59,11 +59,41 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
 
     const imageBytes = fs.readFileSync(path.join('public/img', 'dosxdos_logo.png'));
     const image = await pdfDoc.embedPng(imageBytes);
-    const imgWidth = 100;
+    const imgWidth = 150;
     const imgHeight = (image.height / image.width) * imgWidth;
     const imgX = 40;
     const imgY = height - 60 - imgHeight;
     page.drawImage(image, { x: imgX, y: imgY, width: imgWidth, height: imgHeight });
+
+    const direccionTexto = [
+        datosOT.Contact_Name?.name || 'Nombre del contacto no esta relacionado',
+        datosOT.Empresa?.name || 'Nombre de la empresa no esta relacionado',
+        datosOT.cliente?.Billing_Street || 'Nombre de la calle no esta disponible para el cliente',
+        datosOT.cliente?.Billing_Code + ' - ' + datosOT.cliente?.Billing_City || 'Nombre de la ciudad no esta disponible para el cliente',
+        datosOT.cliente?.CIF_NIF1 || 'El CIF/NIF del cliente no aparece compruebalo en el modulo de clientes del CRM',
+    ];
+
+    const textoSize = 10;
+    const textoSpacing = 14;
+    const margenDerecho = 40;
+    let textoY = imgY + imgHeight - textoSpacing; // Alineado con la parte superior del logo
+
+    for (const linea of direccionTexto) {
+        const textWidth = font.widthOfTextAtSize(linea, textoSize);
+        const textoX = width - margenDerecho - textWidth;
+
+        page.drawText(linea, {
+            x: textoX,
+            y: textoY,
+            size: textoSize,
+            font,
+            color: colorNegro,
+        });
+
+        textoY -= textoSpacing;
+    }
+
+
 
     const footerYH = 620;
     let blockY = footerYH + 12;
@@ -133,20 +163,30 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     drawTableCell('Total', colX[3], blockY, colWidth[3], rowHeight);
     blockY -= rowHeight;
 
-    for (const pdv of datosOT.puntos_de_venta || []) {
-        ensureSpace(rowHeight);
-        const nombre = pdv.PDV_relacionados?.name || 'Punto de venta';
-        const totalEscaparates = (pdv.escaparates || []).length;
+    let totalRealizacion = 0;
 
+    for (const pdv of datosOT.puntos_de_venta || []) {
+        const nombre = pdv.PDV_relacionados?.name || 'Punto de venta';
+        let totalPDV = 0;
+
+        for (const esc of pdv.escaparates || []) {
+            const precioUnitario = parseFloat(esc.Precio_material || 0);
+            const unidades = parseInt(esc.unidades_material || 1);
+            totalPDV += precioUnitario * unidades;
+        }
+
+        totalRealizacion += totalPDV;
+
+        ensureSpace(rowHeight);
         drawTableCell(nombre, colX[0], blockY, colWidth[0], rowHeight);
-        drawTableCell(`${totalEscaparates}`, colX[1], blockY, colWidth[1], rowHeight);
-        drawTableCell('0 €', colX[2], blockY, colWidth[2], rowHeight);
-        drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+        drawTableCell(`${(pdv.escaparates || []).length}`, colX[1], blockY, colWidth[1], rowHeight);
+        drawTableCell(`${(totalPDV / (pdv.escaparates || []).length).toFixed(2)} €`, colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell(`${totalPDV.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
         blockY -= rowHeight;
     }
 
     drawTableCell('TOTAL REALIZACIÓN', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
-    drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+    drawTableCell(`${totalRealizacion.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
     blockY -= rowHeight + 20;
 
     drawTableCell('CONCEPTO', colX[0], blockY, colWidth[0], rowHeight);
@@ -156,38 +196,26 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
     blockY -= rowHeight;
 
     ensureSpace(rowHeight);
-    const agrupaciones = {};
+    let totalMontajes = 0;
     for (const pdv of datosOT.puntos_de_venta || []) {
-        for (const linea of pdv.lineas || []) {
-            const tipo = linea.Tipo_de_trabajo || 'Montaje';
+        const precioMontaje = parseFloat(pdv.montaje || 0);
+        if (!precioMontaje) continue;
 
-            const dias = parseInt(linea.D_as_actuaci_n) || 0;
-            const horas = parseInt(linea.Horas_actuaci_n) || 0;
-            const minutos = parseInt(linea.Minutos_actuaci_n) || 0;
-
-            console.log('Dias:', dias + 'Horas:', horas + 'Minutos:', minutos);
-
-            const tiempo = (dias * 24 * 60) + (horas * 60) + minutos;
-
-            const clave = `${tipo} - ${tiempo} tiempo`;
-            agrupaciones[clave] = (agrupaciones[clave] || 0) + 1;
-        }
-    }
-
-
-    for (const [clave, cantidad] of Object.entries(agrupaciones)) {
         ensureSpace(rowHeight);
-        drawTableCell(clave, colX[0], blockY, colWidth[0], rowHeight);
-        drawTableCell(`${cantidad}`, colX[1], blockY, colWidth[1], rowHeight);
-        drawTableCell('0 €', colX[2], blockY, colWidth[2], rowHeight);
-        drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+        drawTableCell(`Montaje ${pdv.PDV_relacionados?.name || ''}`, colX[0], blockY, colWidth[0], rowHeight);
+        drawTableCell('1', colX[1], blockY, colWidth[1], rowHeight);
+        drawTableCell(`${precioMontaje.toFixed(2)} €`, colX[2], blockY, colWidth[2], rowHeight);
+        drawTableCell(`${precioMontaje.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
         blockY -= rowHeight;
+
+        totalMontajes += precioMontaje;
     }
 
     ensureSpace(rowHeight);
 
     drawTableCell('TOTAL MONTAJES', colX[0], blockY, colWidth[0] + colWidth[1] + colWidth[2], rowHeight);
-    drawTableCell('0 €', colX[3], blockY, colWidth[3], rowHeight);
+    drawTableCell(`${totalMontajes.toFixed(2)} €`, colX[3], blockY, colWidth[3], rowHeight);
+
 
     ensureSpace(rowHeight + 60); // Por si hay que saltar de página
 
@@ -232,8 +260,9 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
         borderColor: colorNegro,
         borderWidth: 1,
     });
-    page.drawText('0 €', {
-        x: colX[3] + centerText('0 €', colWidth[3], boldFont, 9),
+    const precioTotal = totalRealizacion + totalMontajes;
+    page.drawText(`${precioTotal.toFixed(2)} €`, {
+        x: colX[3] + centerText(`${precioTotal.toFixed(2)} €`, colWidth[3], boldFont, 9),
         y: blockY - rowFinalHeight + 10,
         size: 9,
         font: boldFont,
@@ -259,6 +288,78 @@ export async function generarPresupuestoPDF(datosOT, rutaSalida = './presupuesto
             color: colorNegro
         });
     }
+
+    ensureSpace(140); // Espacio para 6 líneas aprox. en caso de estar muy cerca del final
+
+    const observacionesFinales = [
+        'OBS.: ' + (datosOT.OBS || 'No incluye % impuestos a los que estamos sujetos en todas las facturas.'),
+        'FORMA DE PAGO: Las estipuladas con ustedes.',
+        'PRESUPUESTO SOLICITADO POR: ' + (datosOT.Contact_Name?.name || 'Nombre del contacto no esta relacionado'),
+        '',
+        'En cumplimiento de la Ley Orgánica 15/1999, de Protección de Datos de Carácter Personal, la entidad DOS POR DOS GRUPO IMAGEN, S.L.,',
+        'con domicilio en la Urbanización Juan Ascanio, s/n, Las Palmas, le informa que sus datos personales se almacenan en un fichero',
+        'titularidad de la Sociedad, con la finalidad de realizar las gestiones necesarias en relación con el servicio prestado.',
+        'De igual modo, le informamos de la posibilidad de ejercitar sus derechos de acceso, rectificación, cancelación y oposición',
+        'mediante petición dirigida a la Sociedad, a través del correo electrónico o hola@dospordosgrupoimagen.com.'
+      ];
+      
+      const margenX = 50;
+      const lineHeightGrande = 16;
+      const lineHeightPeque = 8;
+      const textSizeGrande = 11;
+      const textSizePeque = 7;
+      
+      const topMargin = 60;
+      blockY -= topMargin;
+      
+      for (let i = 0; i < observacionesFinales.length; i++) {
+        const linea = observacionesFinales[i];
+      
+        // Determina el tamaño y espaciado según la línea
+        const isGrande = i < 3;
+        const size = isGrande ? textSizeGrande : textSizePeque;
+        const lineHeight = isGrande ? lineHeightGrande : lineHeightPeque;
+      
+        // Si no cabe verticalmente, salta de página
+        if (blockY - lineHeight < MIN_Y) {
+          page = addPageWithLayout();
+          const size = page.getSize();
+          blockY = size.height - 250;
+        }
+      
+        // Si el texto es demasiado largo, parte en líneas múltiples
+        const palabras = linea.split(' ');
+        let lineaActual = '';
+        for (const palabra of palabras) {
+          const pruebaLinea = `${lineaActual}${palabra} `;
+          const ancho = font.widthOfTextAtSize(pruebaLinea, size);
+          if (ancho > (width - 2 * margenX)) {
+            page.drawText(lineaActual.trim(), {
+              x: margenX,
+              y: blockY,
+              size,
+              font,
+              color: colorNegro,
+            });
+            blockY -= lineHeight;
+            lineaActual = `${palabra} `;
+          } else {
+            lineaActual = pruebaLinea;
+          }
+        }
+      
+        // Última línea
+        if (lineaActual.trim()) {
+          page.drawText(lineaActual.trim(), {
+            x: margenX,
+            y: blockY,
+            size,
+            font,
+            color: colorNegro,
+          });
+          blockY -= lineHeight;
+        }
+      }
 
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(rutaSalida, pdfBytes);
