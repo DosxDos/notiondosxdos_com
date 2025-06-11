@@ -176,7 +176,6 @@ router.get('/materialesPresupuesto', async (req, res) => {
     }
 });
 
-
 //recoge todos los puntos de venta de zoho y los convierte a un json
 router.get('/recogerModuloZoho', async (req, res) => {
     try {

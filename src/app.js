@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import MongoDB  from './DB/MongoDB.js';
+import MongoDB from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { engine } from 'express-handlebars';
@@ -8,10 +8,11 @@ import cookieParser from 'cookie-parser';
 const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
-import frontendRouter from './routes/frontendRoutes.js';
 import respuesta from './utils/respuesta_util.js';
 import { exec } from 'child_process';
-import {verifyJWT} from './security/authMiddleware.js';
+import { verifyJWT } from './security/authMiddleware.js';
+import axios from 'axios';
+import jwt from 'jsonwebtoken';
 
 app.use(express.json({ limit: '10mb' })); //Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
@@ -33,9 +34,6 @@ mongo.connect();
 
 app.use(express.json()); // Analizar cuerpos application/json
 app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application/x-www-form-urlencoded
-
-// Rutas frontend (vistas Handlebars)
-app.use('/', frontendRouter);
 
 // Usar rutas principales
 app.use('/api', router);
@@ -64,6 +62,16 @@ app.set('views', path.join(__dirname, '../public/views'));
 // Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Enpoint GET de las vistas del fronted de presupuestos de escaparates
+app.get('/presupuesto/:codigoOT', verifyJWT, (req, res) => {
+  console.log('Ruta /presupuesto/:codigoOT accedida con código:', req.params.codigoOT);
+  res.render('nueva_ot', {
+    layout: 'main',
+    title: 'Crear Presupuesto',
+    codigoOT: req.params.codigoOT
+  });
 });
 
 // Ruta GET para verificar el webhook de github
