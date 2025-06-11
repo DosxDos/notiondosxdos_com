@@ -3,9 +3,12 @@ import express from 'express';
 import MongoDB  from './DB/MongoDB.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { engine } from 'express-handlebars';
+import cookieParser from 'cookie-parser';
 const app = express();
 dotenv.config(); // Cargar variables de entorno
 import router from './routes/index.js';
+import frontendRouter from './routes/frontendRoutes.js';
 import respuesta from './utils/respuesta_util.js';
 import { exec } from 'child_process';
 import {verifyJWT} from './security/authMiddleware.js';
@@ -13,11 +16,14 @@ import {verifyJWT} from './security/authMiddleware.js';
 app.use(express.json({ limit: '10mb' })); //Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Cambiar el límite de tamaño del cuerpo de la solicitud a 10mb
 
-app.use(verifyJWT); // 🔒 Esto se aplica a TODAS las rutas
-
 // Obtener __filename y __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
+app.use(express.static(path.join(__dirname, '../public')));
+
+app.use(verifyJWT); // 🔒 Esto se aplica a TODAS las rutas EXCEPTO los archivos estáticos
 
 // Crear una única instancia de MongoDB (Singleton)
 const mongo = new MongoDB();
@@ -28,11 +34,32 @@ mongo.connect();
 app.use(express.json()); // Analizar cuerpos application/json
 app.use(express.urlencoded({ extended: true })); // Analizar cuerpos application/x-www-form-urlencoded
 
+// Rutas frontend (vistas Handlebars)
+app.use('/', frontendRouter);
+
 // Usar rutas principales
 app.use('/api', router);
 
-// Servir archivos estáticos desde la carpeta "public" (Documentación de la api)
-app.use(express.static(path.join(__dirname, '../public')));
+// Configurar Handlebars
+app.engine('handlebars', engine({
+  partialsDir: path.join(__dirname, '../public/views/partials'),
+  helpers: {
+    json: (context) => JSON.stringify(context, null, 2),
+    range: function (from, to) {
+      const result = [];
+      for (let i = from; i <= to; i++) {
+        result.push(i);
+      }
+      return result;
+    },
+    concat: function (...args) {
+      args.pop();
+      return args.join('');
+    }
+  }
+}));
+app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, '../public/views'));
 
 // Ruta principal para servir el archivo estático index de la carpeta "public" (Documentación de la api)
 app.get('/', (req, res) => {
