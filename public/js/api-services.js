@@ -75,20 +75,21 @@ class ApiServices {
         return await this.fetchWithAuth(`/api/presupuestoEscaparate/${codigoOT}`);
     }
 
-    // Obtiene la lista de materiales para presupuestos     
-    async obtenerMateriales() {
-        return await this.fetchWithAuth('/api/materialesPresupuesto');
-    }
-
     // Obtiene datos de un módulo específico de Zoho   
     async obtenerDatosModuloZoho(modulo, criteria = null) {
-        let endpoint = `/api/recogerModuloZoho?modulo=${modulo}`;
-        
-        if (criteria) {
-            endpoint += `&criteria=${encodeURIComponent(criteria)}`;
+        try {
+            let endpoint = `/api/recogerModuloZoho?modulo=${modulo}`;
+            
+            if (criteria) {
+                endpoint += `&criteria=${encodeURIComponent(criteria)}`;
+            }
+            
+            const response = await this.fetchWithAuth(endpoint);
+            return response;
+        } catch (error) {
+            console.error(`Error al obtener datos del módulo ${modulo}:`, error);
+            return { error: error.message, data: [] };
         }
-        
-        return await this.fetchWithAuth(endpoint);
     }
 
     // Obtiene todos los puntos de venta desde Zoho    
@@ -97,11 +98,37 @@ class ApiServices {
         return response.proveedores || [];
     }
 
+    // Obtiene la lista de materiales para presupuestos desde Zoho    
+    async obtenerMateriales() {
+        try {
+            console.log('Obteniendo materiales del módulo PreciosMaterialesYServ');
+            const response = await this.obtenerDatosModuloZoho('PreciosMaterialesYServ');
+            console.log('Respuesta completa de Zoho para materiales:', response);
+            
+            // Verificar si los datos están en formato esperado
+            if (response.proveedores && Array.isArray(response.proveedores)) {
+                console.log('Devolviendo datos en formato proveedores');
+                return response.proveedores;
+            } else if (response.data && Array.isArray(response.data)) {
+                console.log('Devolviendo datos en formato data');
+                return response.data;
+            } else if (Array.isArray(response)) {
+                console.log('Devolviendo datos en formato array');
+                return response;
+            }
+            
+            console.warn('Los datos de materiales no tienen el formato esperado');
+            return [];  
+        } catch (error) {
+            console.error('Error al obtener materiales:', error);
+            return [];
+        }      
+    }
+
     // Obtiene la lista de elementos existentes que pueden ser reutilizados     
     async obtenerElementosExistentes() {
         try {
             // Usar obtenerDatosModuloZoho de manera similar a obtenerPuntosDeVenta
-            // Asumimos que el módulo se llama "Elementos_Escaparate" o algo similar
             const response = await this.obtenerDatosModuloZoho('ElementosDeEscaparates');
             return response.proveedores || [];
         } catch (error) {

@@ -153,10 +153,52 @@ class PresupuestosTabla {
                 return;
             }
             
-            const data = await window.apiServices.obtenerMateriales();
+            const materiales = await window.apiServices.obtenerMateriales();
+            console.log('Materiales obtenidos de Zoho:', materiales);
+            
+            if (!materiales || !Array.isArray(materiales) || materiales.length === 0) {
+                console.warn('No se recibieron materiales o el formato no es válido');
+                return;
+            }
+            
+            // Vamos a inspeccionar el primer material para entender su estructura
+            const primerMaterial = materiales[0];
+            console.log('Estructura del primer material:', primerMaterial);
+            
+            // Adaptar el formato de los datos de Zoho al formato esperado
+            const materialesAdaptados = {
+                materiales: materiales.map(material => {
+                    // Usar el campo Material para el nombre (prioridad)
+                    const nombre = 
+                        material.Material || 
+                        material.material || 
+                        material.Name || 
+                        material.name || 
+                        material.Nombre ||
+                        material.nombre ||
+                        'Material sin nombre';
+                    
+                    // Buscar el precio en cualquier campo que pueda contenerlo
+                    const importe = 
+                        parseFloat(material.Precio) || 
+                        parseFloat(material.precio) || 
+                        parseFloat(material.Importe) || 
+                        parseFloat(material.importe) ||
+                        parseFloat(material.Price) ||
+                        parseFloat(material.price) ||
+                        0;
+                    
+                    return {
+                        nombre: nombre,
+                        importe: importe
+                    };
+                })
+            };
+            
+            console.log('Materiales adaptados:', materialesAdaptados);
 
             // Actualizar materialesDisponibles en calculadora
-            window.calculadora.actualizarMaterialesDisponibles(data);
+            window.calculadora.actualizarMaterialesDisponibles(materialesAdaptados);
             
             // Actualizar selectores de materiales
             window.calculadora.actualizarSelectoresMateriales();
