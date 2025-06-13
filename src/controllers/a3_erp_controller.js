@@ -141,6 +141,8 @@ class a3Erp_controller {
                     const bodyForMongo = {
                         data: this.body // Envuelve el objeto en un array dentro de 'data'
                     };
+                    bodyForMongo.data.C_digo = data.NIF;
+                    bodyForMongo.data._id = data.NIF;
                     // Creamos el cliente en el sincronizador de Mongo con el _id = NIF
                     mongo.createIfNotExists('clientesA3Post', this.body.C_digo, bodyForMongo)
                         .then((result) => {
