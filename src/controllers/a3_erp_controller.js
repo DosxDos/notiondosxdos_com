@@ -139,7 +139,7 @@ class a3Erp_controller {
                     }
                     //Tratamos los datos del cuerpo para que sea compatible con Mongo
                     const bodyForMongo = {
-                        data: await this.body.json() // Envuelve el objeto en un array dentro de 'data'
+                        data: await this.body // Envuelve el objeto en un array dentro de 'data'
                     };
                     bodyForMongo.data.C_digo = this.body.NIF;
                     bodyForMongo.data._id = this.body.NIF;
@@ -187,9 +187,9 @@ class a3Erp_controller {
 }
 
 export default a3Erp_controller;
-
-//PRUEBAS
 /*
+//PRUEBAS
+
 const data = {
     Nombre: "Andrés Felipe González Builes",
     NIF: "Y0049134C",
@@ -215,8 +215,6 @@ const data = {
     Caracteristica2: "PRF",
     Representante: "2"
 }
-data.C_digo = data.NIF;
-data._id = data.NIF;
 const a3ErpController = new a3Erp_controller(data);
 a3ErpController.crearCliente()
     .then(response => {
