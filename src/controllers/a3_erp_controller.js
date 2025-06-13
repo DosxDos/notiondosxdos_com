@@ -27,7 +27,7 @@ class a3Erp_controller {
             const response = {};
             const respuestaFinal = {};
             mongo.connect()
-                .then((result) => {
+                .then(async (result) => {
                     //Tratamos los datos del cuerpo para que sea compatible con A3
                     //Homologación del tipo de impuesto en A3
                     switch (this.body.TipoOperacion) {
@@ -139,7 +139,7 @@ class a3Erp_controller {
                     }
                     //Tratamos los datos del cuerpo para que sea compatible con Mongo
                     const bodyForMongo = {
-                        data: this.body // Envuelve el objeto en un array dentro de 'data'
+                        data: await this.body.json() // Envuelve el objeto en un array dentro de 'data'
                     };
                     bodyForMongo.data.C_digo = this.body.NIF;
                     bodyForMongo.data._id = this.body.NIF;
