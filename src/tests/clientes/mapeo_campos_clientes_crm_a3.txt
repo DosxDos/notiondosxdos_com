@@ -87,3 +87,30 @@ Direccion2 - Domicilio de envío (Shipping_Street) + Ciudad de envío (Shipping_
 "CodigoPais": "ES", codPais
 "CodigoMoneda": "EURO", codMoneda
 CodigoPostal - Código de facturación (Billing_Code) - codPostal
+
+OBJETO EN EL WEBHOOK DEL CRM
+{
+  "Nombre": "${Clientes.Nombre de Cliente}",
+  "NIF": "${Clientes.CIF/ NIF}",
+  "Direccion": "${Clientes.Domicilio de facturación}, ${Clientes.Ciudad de facturación}",
+  "TipoImpuesto": "${Clientes.Impuesto}",
+  "Email": "anfego1@hotmail.com",
+  "TipoOperacion": "${Clientes.Impuesto}",
+  "FormaPago": "${Clientes.Código  términos pago}",
+  "DocumentoPago": "${Clientes.Cód. forma pago}",
+  "Obsoleto": "F",
+  "CodigoPais": "ES",
+  "CodigoPostal": "${Clientes.Código de facturación}",
+  "Telefono": "${Clientes.Teléfono}",
+  "Telefono2": "${Clientes.Teléfono 2}",
+  "Fax": "${Clientes.Fax}",
+  "Param1": "${Lookup:Contacto relacionado.Nombre de Contacto}",
+  "Param2": "${Clientes.Descuento realización}",
+  "Param3": "${Clientes.Descuento montaje}",
+  "Param4": "${Clientes.Grupo contable negocio}",
+  "Direccion2": "${Clientes.Domicilio de envío}, ${Clientes.Ciudad de envío}",
+  "CodigoMoneda": "EURO",
+  "Caracteristica1": "${Clientes.Grupo contable cliente}",
+  "Caracteristica2": "PRF",
+  "Representante": "${Clientes.Código vendedor}"
+}

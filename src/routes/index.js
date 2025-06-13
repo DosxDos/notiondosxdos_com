@@ -4,6 +4,7 @@ import ots_notion_controller from '../controllers/ots_notion_controller.js';
 import ots_crmzoho_controller from '../controllers/ots_crmzoho_controller.js';
 import leads_crm from '../controllers/ots_crmzoho_controller.js';
 import presupuesto_notion_controller from '../controllers/presupuesto_notion_controller.js';
+import a3Erp_controller from '../controllers/a3_erp_controller.js';
 import path from 'path';
 import fs from 'fs';
 import xlsx from 'xlsx';
@@ -215,6 +216,18 @@ router.get('/recogerModuloZoho', async (req, res) => {
         });
     }
 });
+
+/**
+ * Estas son las peticiones para sincronizar los clientes
+ */
+
+//Endpoint POST para crear clientes en A3Erp
+router.post('/clientes_a3', async (req, res) => {
+    const a3Controller = new a3Erp_controller(req.body);
+    const response = await a3Controller.crearCliente();
+    res.status(response.code).json(response);
+});
+
 
 
 export default router;

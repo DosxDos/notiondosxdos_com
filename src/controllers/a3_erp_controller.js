@@ -28,15 +28,126 @@ class a3Erp_controller {
             const respuestaFinal = {};
             mongo.connect()
                 .then((result) => {
+                    //Tratamos los datos del cuerpo para que sea compatible con A3
+                    //Homologación del tipo de impuesto en A3
+                    switch (this.body.TipoOperacion) {
+                        case "IGIC":
+                            this.body.TipoOperacion = "VIGIC";
+                            this.body.TipoImpuesto = "IGIC7";
+                            break;
+                        case "IVA":
+                            this.body.TipoOperacion = "VNAC";
+                            this.body.TipoImpuesto = "ORD21";
+                            break;
+                        case "UE":
+                            this.body.TipoOperacion = "VNOSUJ";
+                            this.body.TipoImpuesto = "NOSUJETO";
+                            break;
+                        case "EXENTO":
+                            this.body.TipoOperacion = "VNOSUJ";
+                            this.body.TipoImpuesto = "NOSUJETO";
+                            break;
+                        case "NO SUJETO IVA":
+                            this.body.TipoOperacion = "VNOSUJ";
+                            this.body.TipoImpuesto = "NOSUJETO";
+                            break;
+                        case "NO SUJETO IGIC":
+                            this.body.TipoOperacion = "VNOSUJ";
+                            this.body.TipoImpuesto = "NOSUJETO";
+                            break;
+                    }
+                    //Homologación de los términos de pago
+                    switch (this.body.FormaPago) {
+                        case "Net 15":
+                            this.body.FormaPago = "15";
+                            break;
+                        case "Net 30":
+                            this.body.FormaPago = "30";
+                            break;
+                        case "Net 45":
+                            this.body.FormaPago = "45";
+                            break;
+                        case "Net 60":
+                            this.body.FormaPago = "60";
+                            break;
+                        case "Net 80":
+                            this.body.FormaPago = "3062";
+                            break;
+                        case "Net 90":
+                            this.body.FormaPago = "90";
+                            break;
+                        case "Net 120":
+                            this.body.FormaPago = "120";
+                            break;
+                        case "Net 150":
+                            this.body.FormaPago = "150";
+                            break;
+                        case "Due on receipt":
+                            this.body.FormaPago = "3061";
+                            break;
+                    }
+                    // Homologación de los documentos de pago (formas de pago)
+                    switch (this.body.DocumentoPago) {
+                        case "CONTADO":
+                            this.body.DocumentoPago = "C";
+                            break;
+                        case "CONFIRMING":
+                            this.body.DocumentoPago = "CONF";
+                            break;
+                        case "TALÓN":
+                            this.body.DocumentoPago = "T";
+                            break;
+                        case "PAGARE":
+                            this.body.DocumentoPago = "P";
+                            break;
+                        case "TRANSF":
+                            this.body.DocumentoPago = "TR";
+                            break;
+                        case "FACTORING":
+                            this.body.DocumentoPago = "FA";
+                            break;
+                        case "RECIBO":
+                            this.body.DocumentoPago = "R";
+                            break;
+                    }
+                    // Homologación del grupo contable
+                    switch (this.body.Caracteristica1) {
+                        case "ALUVISION":
+                            this.body.Caracteristica1 = "ALUVISIO";
+                            break;
+                        case "PARTICULARES":
+                            this.body.Caracteristica1 = "PARTICUL";
+                            break;
+                    }
+                    // Homologación de la clase de cliente
+                    switch (this.body.Caracteristica2) {
+                        case "Marca de lujo":
+                            this.body.Caracteristica2 = "MDL";
+                            break;
+                        case "Perfumería":
+                            this.body.Caracteristica2 = "PRF";
+                            break;
+                    }
+                    // Homologación del representante comercial
+                    switch (this.body.Representante) {
+                        case null:
+                            this.body.Representante = "1";
+                            break;
+                        case "":
+                            this.body.Representante = "1";
+                            break;
+                    }
+                    //Tratamos los datos del cuerpo para que sea compatible con Mongo
                     const bodyForMongo = {
                         data: this.body // Envuelve el objeto en un array dentro de 'data'
                     };
+                    // Creamos el cliente en el sincronizador de Mongo con el _id = NIF
                     mongo.createIfNotExists('clientesA3Post', this.body.C_digo, bodyForMongo)
                         .then((result) => {
                             console.log("Respuesta de MongoDB: ", result);
                             respuestas.message = "Respuesta recibida de MongoDB";
-
                             respuestaFinal.mongoResponse = result;
+                            // Si en el sincronizador de Mongo no hay errores entonces creamos el cliente en A3Erp
                             _a3Erp.post("cliente", this.body)
                                 .then((responseA3) => {
                                     console.log("Respuesta de A3ERP: ", responseA3);
@@ -53,7 +164,6 @@ class a3Erp_controller {
                                     mongo.close();
                                     resolve(respuestas._500());
                                 });
-
                         })
                         .catch((error) => {
                             console.error("Error al crear el cliente en MongoDB: ", error);
@@ -70,7 +180,6 @@ class a3Erp_controller {
                     mongo.close();
                     resolve(respuestas._500());
                 });
-
         });
     }
 }
