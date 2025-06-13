@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config(); 
+dotenv.config();
 
 class a3Erp {
     #baseUrl;
@@ -20,12 +20,12 @@ class a3Erp {
             this.#apiKey = process.env.A3ERP_API_KEY;
 
             // Enlazar contexto si es necesario
-            this.crearOt = this.#execute.bind(this);
-            this.putOt = this.#handleError.bind(this);
-            this.deleteOt = this.get.bind(this);
-            this.deleteOt = this.post.bind(this);
-            this.deleteOt = this.put.bind(this);
-            this.deleteOt = this.delete.bind(this);
+            this.execute = this.#execute.bind(this);
+            this.handleError = this.#handleError.bind(this);
+            this.get = this.get.bind(this);
+            this.post = this.post.bind(this);
+            this.put = this.put.bind(this);
+            this.delete = this.delete.bind(this);
         } catch (e) {
             this.#handleError(e);
         }
@@ -90,8 +90,9 @@ class a3Erp {
 }
 
 //PRUEBAS Y EJEMPLOS DE USO (sintaxis OData v3)
-/*
+
 // GET de todos los clientes
+/*
 const a3erp = new a3Erp();
 a3erp.get('cliente?externalFields=true')
     .then(response => console.log(response))
@@ -136,3 +137,5 @@ a3erp.post("cliente", data)
     .then(response => console.log(response))
     .catch(error => console.error(error));
 */
+
+export default a3Erp;

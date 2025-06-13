@@ -124,9 +124,34 @@ class MongoDB {
 
   async createNewDocument(collectionName, body) {
     const collection = this.db.collection(collectionName);
-    let newDocument = { collectionName: collectionName, data: body.data };
+
+    console.log('=== CREANDO NUEVO DOCUMENTO ===');
+    console.log('Body recibido:', body);
+    console.log('body.data:', body.data);
+    console.log('¿body.data tiene _id?', body.data && body.data.hasOwnProperty('_id'));
+
+    let newDocument;
+
+    // Si body.data tiene un _id personalizado, usarlo para todo el documento
+    if (body.data && body.data.hasOwnProperty('_id')) {
+      newDocument = {
+        _id: body.data._id, // ← Usar el _id personalizado para el documento principal
+        collectionName: collectionName,
+        data: [body.data] // ← body.data va dentro del array
+      };
+    } else {
+      newDocument = {
+        collectionName: collectionName,
+        data: [body.data] // ← Sin _id personalizado, MongoDB generará uno
+      };
+    }
+
+    console.log('Documento a insertar:', newDocument);
+
     MongoDB.mongoIds.push(newDocument);
     const result = await collection.insertOne(newDocument);
+
+    console.log('Resultado de inserción:', result);
     return result;
   }
 
@@ -148,38 +173,38 @@ class MongoDB {
 
   async createIfNotExists(collectionName, C_digo, body) {
     try {
-        console.log('Verificando si el documento ya existe...');
-        
-        await this.initializeMongoIds(); // Se llama correctamente con `this`
-        const docIndex = await this.documentExists(collectionName); // Se llama correctamente con `this`
+      console.log('Verificando si el documento ya existe...');
 
-        if (docIndex === -1) {
-            console.log('Documento no encontrado en mongoIds, creando uno nuevo...');
-            return await this.createNewDocument(collectionName, body); // Se llama correctamente con `this`
-        }
+      await this.initializeMongoIds(); // Se llama correctamente con `this`
+      const docIndex = await this.documentExists(collectionName); // Se llama correctamente con `this`
 
-        let document = MongoDB.mongoIds[docIndex];
+      if (docIndex === -1) {
+        console.log('Documento no encontrado en mongoIds, creando uno nuevo...');
+        return await this.createNewDocument(collectionName, body); // Se llama correctamente con `this`
+      }
 
-        let existingOT = await this.checkCodigoState(document, C_digo);
+      let document = MongoDB.mongoIds[docIndex];
 
-        while (MongoDB.peticion == false) {
-            await new Promise(resolve => setTimeout(resolve, 1));
-        }
+      let existingOT = await this.checkCodigoState(document, C_digo);
 
-        if (existingOT) {
-            console.log('El objeto con C_digo ya existe, no se crea nada.');
-            return false;
-        }
+      while (MongoDB.peticion == false) {
+        await new Promise(resolve => setTimeout(resolve, 1));
+      }
 
-        console.log('C_digo no encontrado, agregando el nuevo objeto...');
-        document.data.push(...body.data);
-        return await this.updateDocument(document, collectionName); // Se llama correctamente con `this`
+      if (existingOT) {
+        console.log('El objeto con C_digo ya existe, no se crea nada.');
+        return false;
+      }
+
+      console.log('C_digo no encontrado, agregando el nuevo objeto...');
+      document.data.push(...body.data);
+      return await this.updateDocument(document, collectionName); // Se llama correctamente con `this`
 
     } catch (error) {
-        console.error('Error al verificar y crear el documento:', error);
-        throw error;
+      console.error('Error al verificar y crear el documento:', error);
+      throw error;
     }
-}
+  }
 
 
 
