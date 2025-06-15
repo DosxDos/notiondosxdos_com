@@ -101,19 +101,14 @@ class ApiServices {
     // Obtiene la lista de materiales para presupuestos desde Zoho    
     async obtenerMateriales() {
         try {
-            console.log('Obteniendo materiales del módulo PreciosMaterialesYServ');
             const response = await this.obtenerDatosModuloZoho('PreciosMaterialesYServ');
-            console.log('Respuesta completa de Zoho para materiales:', response);
             
             // Verificar si los datos están en formato esperado
             if (response.proveedores && Array.isArray(response.proveedores)) {
-                console.log('Devolviendo datos en formato proveedores');
                 return response.proveedores;
             } else if (response.data && Array.isArray(response.data)) {
-                console.log('Devolviendo datos en formato data');
                 return response.data;
             } else if (Array.isArray(response)) {
-                console.log('Devolviendo datos en formato array');
                 return response;
             }
             

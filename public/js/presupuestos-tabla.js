@@ -161,10 +161,6 @@ class PresupuestosTabla {
                 return;
             }
             
-            // Vamos a inspeccionar el primer material para entender su estructura
-            const primerMaterial = materiales[0];
-            console.log('Estructura del primer material:', primerMaterial);
-            
             // Adaptar el formato de los datos de Zoho al formato esperado
             const materialesAdaptados = {
                 materiales: materiales.map(material => {
@@ -195,8 +191,6 @@ class PresupuestosTabla {
                 })
             };
             
-            console.log('Materiales adaptados:', materialesAdaptados);
-
             // Actualizar materialesDisponibles en calculadora
             window.calculadora.actualizarMaterialesDisponibles(materialesAdaptados);
             
@@ -297,8 +291,6 @@ class PresupuestosTabla {
         const elementoExistente = this.elementosExistentesDisponibles.find(elem => elem.id === elementoId);
         if (!elementoExistente) return;
         
-        console.log('Elemento seleccionado:', elementoExistente);
-        
         // Acceder a los datos originales
         const datosOriginales = elementoExistente.datosOriginales;
         
@@ -311,12 +303,12 @@ class PresupuestosTabla {
         // Actualizar alto y ancho con los valores específicos del elemento
         const altoInput = elementoRow.querySelector('.alto');
         if (altoInput) {
-            altoInput.value = datosOriginales.Alto_del_elemento || elementoExistente.Alto || '';
+            altoInput.value = datosOriginales.Alto_del_elemento || elementoExistente.Alto_del_elemento || elementoExistente.Alto || '';
         }
         
         const anchoInput = elementoRow.querySelector('.ancho');
         if (anchoInput) {
-            anchoInput.value = datosOriginales.Ancho_del_elemento || elementoExistente.Ancho || '';
+            anchoInput.value = datosOriginales.Ancho_del_elemento || elementoExistente.Ancho_del_elemento || elementoExistente.Ancho || '';
         }
         
         // Actualizar material si existe
@@ -362,7 +354,15 @@ class PresupuestosTabla {
                 const original = elem.datosOriginales || elem;
                 
                 // Usar Nombre_del_elemento como descripción principal
-                let descripcion = original.Nombre_del_elemento || elem.Nombre;      
+                let descripcion = original.Nombre_del_elemento || elem.Nombre;
+                
+                // Añadir dimensiones al texto descriptivo si están disponibles
+                const alto = original.Alto_del_elemento || elem.Alto_del_elemento || '';
+                const ancho = original.Ancho_del_elemento || elem.Ancho_del_elemento || '';
+                
+                if (alto && ancho) {
+                    descripcion += ` - (${alto} x ${ancho})`;
+                }
                 
                 return `<option value="${elem.id}">${descripcion}</option>`;
             })
@@ -379,17 +379,6 @@ class PresupuestosTabla {
             
             // Obtener elementos desde Zoho
             const elementosZoho = await window.apiServices.obtenerElementosExistentes();
-            console.log('Elementos cargados:', elementosZoho);
-            
-            // Mostrar los nombres originales de los elementos para depuración
-            elementosZoho.forEach(elem => {
-                console.log(`Elemento ID ${elem.id}:`, {
-                    'name': elem.name,
-                    'Name': elem.Name,
-                    'Nombre_del_elemento': elem.Nombre_del_elemento,
-                    'Nombre_del_escaparate': elem.Nombre_del_escaparate
-                });
-            });
             
             // Procesar los elementos para tener un formato uniforme
             this.elementosExistentesDisponibles = elementosZoho.map(elem => {
@@ -405,8 +394,10 @@ class PresupuestosTabla {
                     // Usar el Nombre_del_elemento como prioridad para el nombre
                     Nombre: nombreElemento,
                     // Usar las dimensiones específicas del elemento
-                    Alto: elem.Alto_del_elemento || elem.Alto_del_Suelo || elem.Superior || elem.Alto || '',
-                    Ancho: elem.Ancho_del_elemento || elem.Ancho_del_Suelo || elem.Inferior || elem.Ancho || '',
+                    Alto: elem.Alto_del_elemento || elem.Alto || '',
+                    Ancho: elem.Ancho_del_elemento || elem.Ancho || '',
+                    Alto_del_elemento: elem.Alto_del_elemento || elem.Alto || '',
+                    Ancho_del_elemento: elem.Ancho_del_elemento || elem.Ancho || '',
                     // Verificar si hay materiales en elemento_de_escaparate
                     Material: elem.elemento_de_escaparate?.materiales?.[0]?.Material || elem.Material || '',
                     Precio_Unitario: elem.Precio_Unitario || '',
@@ -414,8 +405,6 @@ class PresupuestosTabla {
                     datosOriginales: elem
                 };
             });
-            
-            console.log('Elementos procesados:', this.elementosExistentesDisponibles);
             
             // Actualizar los selects existentes si hubiera alguno ya en la página
             this.actualizarSelectsElementosExistentes();
@@ -432,8 +421,21 @@ class PresupuestosTabla {
             window.TableUtils.actualizarSelect(
                 select,
                 this.elementosExistentesDisponibles,
-                // Función para obtener el texto a mostrar
-                elem => elem.Nombre || elem.Name || elem.name || 'Elemento sin nombre',
+                // Función para obtener el texto a mostrar con formato "Nombre - (Alto x Ancho)"
+                elem => {
+                    const original = elem.datosOriginales || elem;
+                    let descripcion = original.Nombre_del_elemento || elem.Nombre || elem.Name || elem.name || 'Elemento sin nombre';
+                    
+                    // Añadir dimensiones al texto descriptivo si están disponibles
+                    const alto = original.Alto_del_elemento || elem.Alto_del_elemento || '';
+                    const ancho = original.Ancho_del_elemento || elem.Ancho_del_elemento || '';
+                    
+                    if (alto && ancho) {
+                        descripcion += ` - (${alto} x ${ancho})`;
+                    }
+                    
+                    return descripcion;
+                },
                 // Función para obtener el valor
                 elem => elem.id,
                 // Mantener la primera opción (opción "Seleccionar concepto")

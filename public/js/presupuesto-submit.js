@@ -136,9 +136,11 @@ class PresupuestoSubmit {
         }
         
         // Actualizar datos generales del PDV
-        // Montaje
+        // Montaje - usar el nombre de propiedad "montaje" que espera el backend
         const montajePdv = pdvDiv.querySelector('.montaje-pdv');
         if (montajePdv) {
+            pdvData.montaje = parseFloat(montajePdv.value) || 0;
+            // Mantener también Montaje para compatibilidad
             pdvData.Montaje = parseFloat(montajePdv.value) || 0;
         }
         
@@ -237,6 +239,20 @@ class PresupuestoSubmit {
         
         escaparateData.unidades_material = parseInt(escaparateItem.getAttribute('data-unidades-material')) || 1;
         
+        // Añadir campos adicionales necesarios para Notion
+        // Usar el primer elemento para obtener alto y ancho si están disponibles
+        if (escaparateData.elementos && escaparateData.elementos.length > 0) {
+            const primerElemento = escaparateData.elementos[0];
+            escaparateData.Alto_material = primerElemento.Alto || escaparateData.Alto_del_Suelo;
+            escaparateData.Ancho_material = primerElemento.Ancho || escaparateData.Ancho_del_Suelo;
+            escaparateData.Concepto_material = primerElemento.Nombre_del_elemento || escaparateData.Nombre_del_escaparate;
+        } else {
+            // Si no hay elementos, usar los datos del escaparate
+            escaparateData.Alto_material = escaparateData.Alto_del_Suelo;
+            escaparateData.Ancho_material = escaparateData.Ancho_del_Suelo;
+            escaparateData.Concepto_material = escaparateData.Nombre_del_escaparate;
+        }
+        
         return escaparateData;
     }
 
@@ -326,15 +342,6 @@ class PresupuestoSubmit {
         // Verificar que estamos enviando Total_Escaparates en lugar de Total_Escaparate
         console.log('Enviando datos al backend:', {codigoOT, datos});
         
-        // Log de valores de Total_Escaparates para cada PDV
-        datos.puntos_de_venta.forEach((pdv, index) => {
-            console.log(`PDV ${index + 1} (${pdv.PDV_relacionados?.name || 'Sin nombre'}):`, {
-                Total_Escaparates: pdv.Total_Escaparates,
-                Num_Escaparates: pdv.escaparates?.length || 0,
-                Precio_Promedio: pdv.escaparates?.length ? (pdv.Total_Escaparates / pdv.escaparates.length).toFixed(2) : 0
-            });
-        });
-        
         try {
             // Enviar los datos al endpoint correspondiente y recibir el PDF como Blob
             const pdfBlob = await window.apiServices.enviarPresupuestoActualizado(codigoOT, datos);
@@ -342,13 +349,11 @@ class PresupuestoSubmit {
             // También enviamos los datos para crear el presupuesto en Notion
             try {
                 const respuestaNotion = await window.apiServices.crearPresupuestoEnNotion(codigoOT, datos);
-                console.log('Presupuesto creado en Notion:', respuestaNotion);
             } catch (notionError) {
                 console.error('Error al crear presupuesto en Notion:', notionError);
                 // No interrumpimos el flujo principal si hay error en Notion
             }
             
-            console.log('PDF recibido correctamente, tamaño:', pdfBlob.size);
             return pdfBlob;
         } catch (error) {
             console.error('Error en enviarDatosAlBackend:', error);

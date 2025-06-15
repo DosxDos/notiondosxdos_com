@@ -51,7 +51,6 @@ class PresupuestoLoader {
             // Cargar elementos existentes antes de cargar el presupuesto para que estén disponibles al procesar los elementos del escaparate
             if (window.presupuestosTabla) {
                 await window.presupuestosTabla.cargarElementosExistentes();
-                console.log('Elementos existentes cargados antes del presupuesto');
             }
             
             // Hacer la llamada al endpoint a través del servicio API
@@ -101,7 +100,6 @@ class PresupuestoLoader {
         if (!this.datosPresupuesto || !this.datosPresupuesto.puntos_de_venta) return;
         
         const pdvs = this.datosPresupuesto.puntos_de_venta;
-        console.log(`Encontrados ${pdvs.length} puntos de venta para esta OT`);
         
         if (!window.presupuestosTabla) return;
         
@@ -184,8 +182,6 @@ class PresupuestoLoader {
             const enlaceFotos = pdvData.lineas.find(linea => linea.Fotos)?.Fotos;
             
             if (enlaceFotos) {
-                console.log('Enlace de fotos encontrado:', enlaceFotos);
-                
                 // Buscar el contenedor de enlaces de fotos
                 const enlaceFotosContainer = pdvDiv.querySelector('.enlace-fotos-container');
                 if (enlaceFotosContainer) {
@@ -270,8 +266,8 @@ class PresupuestoLoader {
             );
             
             if (elementoExistente) {
-                console.log('Elemento encontrado en tabla:', elementoExistente);
-                return elementoExistente.Nombre || '';
+                // Priorizar Nombre_del_elemento de los datos originales si existe
+                return elementoExistente.datosOriginales?.Nombre_del_elemento || elementoExistente.Nombre || '';
             }
         }
         
@@ -339,18 +335,22 @@ class PresupuestoLoader {
             if (elementoRow) {
                 // Acceder a la información del elemento
                 const elementoInfo = escaparateData.elemento_de_escaparate;
-                console.log('Elemento info del backend:', elementoInfo);
                 
                 // Buscar el nombre descriptivo del elemento
                 const nombreElemento = this.buscarNombreElemento(elementoInfo.id) || elementoInfo.name || '';
-                console.log('Nombre encontrado para elemento:', nombreElemento);
+                
+                // Buscar el elemento correspondiente en los elementos disponibles
+                const elementoId = elementoInfo.id;
+                const elementoEncontrado = window.presupuestosTabla.elementosExistentesDisponibles.find(
+                    elem => elem.id === elementoId
+                );
                 
                 // Crear un objeto con los datos del elemento_de_escaparate
                 const elementoData = {
                     Nombre_del_elemento: nombreElemento,
                     Nombre: escaparateData.Name || escaparateData.Nombre_del_escaparate || '',
-                    Alto: escaparateData.Alto_del_elemento || escaparateData.Alto_del_Suelo || '',
-                    Ancho: escaparateData.Ancho_del_elemento || escaparateData.Ancho_del_Suelo || '',
+                    Alto: elementoEncontrado?.Alto_del_elemento || elementoEncontrado?.datosOriginales?.Alto_del_elemento || '',
+                    Ancho: elementoEncontrado?.Ancho_del_elemento || elementoEncontrado?.datosOriginales?.Ancho_del_elemento || '',
                     Elemento: escaparateData.elemento_de_escaparate
                 };
                 
@@ -400,6 +400,34 @@ class PresupuestoLoader {
                 precioMPInput.value = material.Precio;
             }
         }
+        // Buscar en los materiales disponibles por ID
+        else if (elementoData.Elemento && elementoData.Elemento.id) {
+            // Buscar el elemento correspondiente en los elementos disponibles
+            const elementoId = elementoData.Elemento.id;
+            const elementoEncontrado = window.presupuestosTabla.elementosExistentesDisponibles.find(
+                elem => elem.id === elementoId
+            );
+            
+            if (elementoEncontrado && elementoEncontrado.datosOriginales && 
+                elementoEncontrado.datosOriginales.elemento_de_escaparate && 
+                elementoEncontrado.datosOriginales.elemento_de_escaparate.materiales && 
+                elementoEncontrado.datosOriginales.elemento_de_escaparate.materiales.length > 0) {
+                
+                const material = elementoEncontrado.datosOriginales.elemento_de_escaparate.materiales[0];
+                
+                // Cargar el Material
+                const materialSelect = elementoRow.querySelector('.material');
+                if (materialSelect && material.Material) {
+                    materialSelect.value = material.Material;
+                }
+                
+                // Cargar el Precio/M.Prima
+                const precioMPInput = elementoRow.querySelector('.precio-mp');
+                if (precioMPInput && material.Precio) {
+                    precioMPInput.value = material.Precio;
+                }
+            }
+        }
         // Si el material viene en el formato tradicional
         else if (elementoData.Material) {
             const materialSelect = elementoRow.querySelector('.material');
@@ -438,7 +466,6 @@ class PresupuestoLoader {
         
         // Si todos los PDVs han sido cargados, inicializar los cálculos
         if (this.pdvsCargados >= this.pdvsACargarse) {
-            console.log('Todos los PDVs han sido cargados. Inicializando cálculos...');
             this.inicializarCalculosAutomaticos();
         }
     }
@@ -449,7 +476,6 @@ class PresupuestoLoader {
         setTimeout(() => {
             if (window.calculadora) {
                 window.calculadora.inicializarCalculos();
-                console.log('Cálculos inicializados automáticamente');
             }
         }, 200);
     }
