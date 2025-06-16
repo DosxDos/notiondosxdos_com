@@ -137,12 +137,12 @@ class MongoDB {
       newDocument = {
         _id: body.data._id, // ← Usar el _id personalizado para el documento principal
         collectionName: collectionName,
-        data: [body.data] // ← body.data va dentro del array
+        data: body.data // ← body.data va dentro del array
       };
     } else {
       newDocument = {
         collectionName: collectionName,
-        data: [body.data] // ← Sin _id personalizado, MongoDB generará uno
+        data: body.data // ← Sin _id personalizado, MongoDB generará uno
       };
     }
 
@@ -155,10 +155,22 @@ class MongoDB {
     return result;
   }
 
+  /*
   async checkCodigoState(document, C_digo) {
     let existingOT = document.data && document.data.find(subObject => subObject.C_digo === C_digo);
     if (existingOT && existingOT.C_digo === '00000') {
       peticion = false;
+    }
+    return existingOT;
+  }
+  */
+
+  // CAMBIO DE LÓGICA PARA VERIFICAR NO EN UN DOCUMENTO, SINO EN LA COLECCIÓN
+  async checkCodigoState(collectionName, id) {
+    const existingOT = await this.db.collection(collectionName).findOne({ _id: id });
+    console.log("existingOT", existingOT);
+    if (existingOT) {
+      MongoDB.peticion = false;
     }
     return existingOT;
   }
@@ -171,6 +183,7 @@ class MongoDB {
     return result;
   }
 
+  /*
   async createIfNotExists(collectionName, C_digo, body) {
     try {
       console.log('Verificando si el documento ya existe...');
@@ -185,14 +198,14 @@ class MongoDB {
 
       let document = MongoDB.mongoIds[docIndex];
 
-      let existingOT = await this.checkCodigoState(document, C_digo);
+      let existingOT = await this.checkCodigoState(collectionName, C_digo);
 
       while (MongoDB.peticion == false) {
         await new Promise(resolve => setTimeout(resolve, 1));
       }
 
       if (existingOT) {
-        console.log('El objeto con C_digo ya existe, no se crea nada.');
+        console.log('El objeto ya existe, no se crea nada.');
         return false;
       }
 
@@ -205,8 +218,52 @@ class MongoDB {
       throw error;
     }
   }
+  */
 
+  // NUEVA LÓGICA EN createIfNotExists()
+  async createIfNotExists(collectionName, id, body) {
+    try {
+      console.log('Verificando si el documento existe en la colección:', collectionName);
+      console.log('id a verificar:', id);
 
+      const collection = this.db.collection(collectionName);
+
+      const existingDoc = await collection.findOne({ 'data._id': id });
+
+      if (existingDoc) {
+        console.log('El objeto ya existe, no se crea nada: ', id);
+        return false
+      }
+
+      // Si no existe, crear nuevo documento
+      console.log('Documento no encontrado, creando nuevo...');
+
+      const newDocument = {
+        collectionName: collectionName,
+        data: body.data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Si body.data tiene _id personalizado, usarlo
+      if (body.data && body.data._id) {
+        newDocument._id = body.data._id;
+      }
+
+      const result = await collection.insertOne(newDocument);
+
+      console.log('Documento creado exitosamente:', result.insertedId);
+      return {
+        success: true,
+        insertedId: result.insertedId,
+        document: newDocument
+      };
+
+    } catch (error) {
+      console.error('Error en createIfNotExists:', error);
+      throw error;
+    }
+  }
 
   // Método para cerrar la conexión a MongoDB
   async close() {
