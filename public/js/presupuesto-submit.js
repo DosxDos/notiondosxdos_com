@@ -48,6 +48,23 @@ class PresupuestoSubmit {
             // Abrir el PDF en una nueva pestaña
             window.open(pdfUrl, '_blank');
             
+            // Preguntar al usuario si desea subir los datos a Notion
+            if (window.ventanaEmergente) {
+                const respuesta = await window.ventanaEmergente.mostrarConfirmacion({
+                    titulo: 'Subir a Notion',
+                    mensaje: '¿Quieres subir los datos a Notion?',
+                    textoBotonSi: 'Sí',
+                    textoBotonNo: 'No',
+                    claseBotonSi: 'bg-red-700 hover:bg-red-800',
+                    claseBotonNo: 'bg-gray-500 hover:bg-gray-600'
+                });
+                
+                // Si el usuario acepta, enviar datos a Notion
+                if (respuesta) {
+                    await this.enviarDatosANotion(datosCompletos);
+                }
+            }
+            
         } catch (error) {
             console.error('Error completo al generar el PDF:', error);
             alert(`Error al generar el PDF: ${error.message}`);
@@ -324,7 +341,7 @@ class PresupuestoSubmit {
         return elementoData;
     }
 
-    // Envía los datos recopilados al backend
+    // Envía los datos recopilados al backend para generar el PDF
     async enviarDatosAlBackend(datos) {
         if (!window.apiServices) {
             throw new Error('ApiServices no está disponible');
@@ -340,24 +357,53 @@ class PresupuestoSubmit {
         }
         
         // Verificar que estamos enviando Total_Escaparates en lugar de Total_Escaparate
-        console.log('Enviando datos al backend:', {codigoOT, datos});
+        console.log('Enviando datos al backend para PDF:', {codigoOT, datos});
         
         try {
             // Enviar los datos al endpoint correspondiente y recibir el PDF como Blob
             const pdfBlob = await window.apiServices.enviarPresupuestoActualizado(codigoOT, datos);
-            
-            // También enviamos los datos para crear el presupuesto en Notion
-            try {
-                const respuestaNotion = await window.apiServices.crearPresupuestoEnNotion(codigoOT, datos);
-            } catch (notionError) {
-                console.error('Error al crear presupuesto en Notion:', notionError);
-                // No interrumpimos el flujo principal si hay error en Notion
-            }
-            
             return pdfBlob;
         } catch (error) {
             console.error('Error en enviarDatosAlBackend:', error);
             throw error;
+        }
+    }
+
+    // Envía los datos a Notion
+    async enviarDatosANotion(datos) {
+        if (!window.apiServices) {
+            throw new Error('ApiServices no está disponible');
+        }
+        
+        // Obtener el código de OT desde la URL
+        const urlPath = window.location.pathname;
+        const pathParts = urlPath.split('/');
+        const codigoOT = pathParts[pathParts.length - 1];
+        
+        if (!codigoOT) {
+            throw new Error('Código OT no encontrado en la URL');
+        }
+        
+        try {
+            if (window.spinner) {
+                window.spinner.show();
+            }
+            
+            console.log('Enviando datos a Notion:', {codigoOT, datos});
+            const respuestaNotion = await window.apiServices.crearPresupuestoEnNotion(codigoOT, datos);
+            
+            // Mostrar mensaje de éxito
+            alert('Los datos se han subido correctamente a Notion');
+            
+            return respuestaNotion;
+        } catch (error) {
+            console.error('Error al crear presupuesto en Notion:', error);
+            alert(`Error al subir datos a Notion: ${error.message}`);
+            throw error;
+        } finally {
+            if (window.spinner) {
+                window.spinner.hide();
+            }
         }
     }
 }
