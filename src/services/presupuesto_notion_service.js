@@ -51,53 +51,70 @@ class presupuesto_notion_service {
                 for (const originalName of pdvNames) {
                     try {
                         const pdvName = originalName.replace(/[()]/g, '').trim();
-                        const url = `https://www.zohoapis.eu/crm/v2/Escaparates/search?criteria=(PDV_relacionado:equals:"${pdvName}")&fields=Imagen_del_escaparate,Nombre_del_escaparate,Tipo_de_escaparate,Name,C_digo_del_escaparate,Nombre_de_Dise_o,Superior,Inferior,Lateral_Derecho,Lateral_Izquierdo,Ancho_del_Suelo,Alto_del_Suelo,Enmarque,Caras_del_PLV,Elemento`;
+                        const url = `https://www.zohoapis.eu/crm/v2/Escaparates/search?criteria=(PDV_relacionado:equals:"${pdvName}")&fields=Nombre_del_escaparate,Elemento`;
                         const res = await axios.get(url, headers);
                         const escaparates = res.data.data;
                 
                         for (const escaparate of escaparates) {
-                            const idElemento = escaparate.Elemento?.id;
-                            if (idElemento) {
-                                console.log(`Obteniendo materiales para el elemento del escaparate: ${idElemento}`);
+                            const idEscaparate = escaparate.id;
+                            const elementos = [];
                 
-                                // 1. Tabla intermedia
-                                const puenteRes = await axios.get(
-                                    `https://www.zohoapis.eu/crm/v2/ESCAPARATES_MATERIALES/search?criteria=(Material_de_escaparate.id:equals:${idElemento})`,
+                            // Paso 1: Obtener los elementos relacionados
+                            const interRes = await axios.get(
+                                `https://www.zohoapis.eu/crm/v2/ESCAPARATES_ELEMENTOS/search?criteria=(ELEMENTOS_ESCAPARATES_RELACIONADOS.id:equals:${idEscaparate})&fields=ELEMENTOS_ESCAPARATES_RELACIONADOS,Elementos_relacionados`,
+                                headers
+                            );
+                
+                            for (const relacion of interRes.data?.data || []) {
+                                const idElemento = relacion.Elementos_relacionados?.id;
+                                if (!idElemento) continue;
+                
+                                // Paso 2: Obtener info del elemento
+                                const elemRes = await axios.get(
+                                    `https://www.zohoapis.eu/crm/v2/Elementos_de_escaparates/search?criteria=(id:equals:${idElemento})&fields=Nombre_del_elemento,Escaparate,Nombre_del_escaparate,Materiales,Acabado,Nombre_de_acabado,Ancho_del_elemento,Alto_del_elemento,Unidades`,
                                     headers
                                 );
+                                const elemento = elemRes.data?.data?.[0];
+                                if (!elemento) continue;
+                
                                 const materiales = [];
                 
-                                for (const item of puenteRes.data?.data || []) {
-                                    const idMaterial = item.Materiales?.id;
-                                    if (idMaterial) {
-                                        try {
-                                            const matRes = await axios.get(
-                                                `https://www.zohoapis.eu/crm/v2/Precios_Materiales/${idMaterial}`,
-                                                headers
-                                            );
-                                            const materialReal = matRes.data?.data?.[0];
-                                            if (materialReal) materiales.push(materialReal);
-                                        } catch (err) {
-                                            console.warn(`Error al obtener material con id ${idMaterial}:`, err.message);
-                                        }
-                                    }
+                                // Paso 3: Buscar materiales asociados en tabla intermedia
+                                const matMapRes = await axios.get(
+                                    `https://www.zohoapis.eu/crm/v2/ESCAPARATES_MATERIALES/search?criteria=(Material_de_escaparate.id:equals:${idElemento})&fields=Material_de_escaparate,Materiales`,
+                                    headers
+                                );
+                
+                                for (const matMap of matMapRes.data?.data || []) {
+                                    const materialName = matMap.Materiales?.name;
+                                    if (!materialName) continue;
+                
+                                    // Paso 4: Buscar precio del material
+                                    const matRealRes = await axios.get(
+                                        `https://www.zohoapis.eu/crm/v2/Precios_Materiales/search?criteria=(Name:equals:${materialName})&fields=C_digo_del_precio,Material,Material_de_escaparate,Precio,Tipo,idA3Erp,Abreviatura`,
+                                        headers
+                                    );
+                                    const materialReal = matRealRes.data?.data?.[0];
+                                    if (materialReal) materiales.push(materialReal);
                                 }
                 
-                                // 2. Añadir al escaparate
-                                escaparate.elemento_de_escaparate = {
-                                    ...escaparate.Elemento,
+                                // Añadir al array de elementos
+                                elementos.push({
+                                    ...elemento,
                                     materiales
-                                };
-                            } else {
-                                escaparate.elemento_de_escaparate = null;
+                                });
                             }
+                
+                            // Vincular todos los elementos al escaparate
+                            escaparate.elementos = elementos;
                         }
                 
                         escaparatesPorPDV[pdvName] = escaparates;
                     } catch (err) {
                         escaparatesPorPDV[originalName] = [];
+                        console.warn(`Error con el PDV ${originalName}:`, err.message);
                     }
-                }
+                }                           
                 
                 
                 
@@ -130,7 +147,7 @@ class presupuesto_notion_service {
                 resolve({ status: false, code: 500, message: error.message, data: error.stack });
             }
         });
-    }       
+    }
 }
 
 export default presupuesto_notion_service;
