@@ -51,7 +51,7 @@ class presupuesto_notion_service {
                 for (const originalName of pdvNames) {
                     try {
                         const pdvName = originalName.replace(/[()]/g, '').trim();
-                        const url = `https://www.zohoapis.eu/crm/v2/Escaparates/search?criteria=(PDV_relacionado:equals:"${pdvName}")&fields=Nombre_del_escaparate,Elemento`;
+                        const url = `https://www.zohoapis.eu/crm/v2/Escaparates/search?criteria=(PDV_relacionado:equals:"${pdvName}")&fields=Imagen_del_escaparate,Nombre_del_escaparate,Tipo_de_escaparate,Name,C_digo_del_escaparate,Nombre_de_Dise_o,Superior,Inferior,Lateral_Derecho,Lateral_Izquierdo,Ancho_del_Suelo,Alto_del_Suelo,Enmarque,Caras_del_PLV,Elemento`;
                         const res = await axios.get(url, headers);
                         const escaparates = res.data.data;
                 
