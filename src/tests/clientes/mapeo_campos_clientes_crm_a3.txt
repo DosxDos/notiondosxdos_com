@@ -94,7 +94,7 @@ OBJETO EN EL WEBHOOK DEL CRM
   "NIF": "${Clientes.CIF/ NIF}",
   "Direccion": "${Clientes.Domicilio de facturación}, ${Clientes.Ciudad de facturación}",
   "TipoImpuesto": "${Clientes.Impuesto}",
-  "Email": "anfego1@hotmail.com",
+  "Email": "${Clientes.Correo electrónico}",
   "TipoOperacion": "${Clientes.Impuesto}",
   "FormaPago": "${Clientes.Código  términos pago}",
   "DocumentoPago": "${Clientes.Cód. forma pago}",
