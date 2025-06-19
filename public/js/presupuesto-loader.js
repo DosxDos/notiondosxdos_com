@@ -48,24 +48,84 @@ class PresupuestoLoader {
                 return;
             }
             
+            console.log('Iniciando carga de presupuesto para OT:', codigoOT);
+            
             // Cargar elementos existentes antes de cargar el presupuesto para que estén disponibles al procesar los elementos del escaparate
             if (window.presupuestosTabla) {
+                console.log('Cargando elementos existentes...');
                 await window.presupuestosTabla.cargarElementosExistentes();
+                console.log('Elementos existentes cargados');
             }
             
             // Hacer la llamada al endpoint a través del servicio API
+            console.log('Obteniendo datos del presupuesto desde el backend...');
             const responseData = await window.apiServices.obtenerPresupuestoPorOT(codigoOT);
-            console.log('Datos del presupuesto obtenidos:', responseData);
+            console.log('Datos del presupuesto recibidos');
             
             // Guardar los datos y procesar
             if (responseData.status && responseData.data && responseData.data.data) {
-                this.datosPresupuesto = responseData.data.data[0];
+                // Crear una copia simplificada para evitar referencias circulares
+                const datosCrudos = responseData.data.data[0];
+                
+                // Usar el controlador de carga para simplificar el objeto
+                if (window.controladorCarga) {
+                    // Crear una copia simplificada de los datos
+                    this.datosPresupuesto = window.controladorCarga.simplificarObjeto(datosCrudos);
+                } else {
+                    // Fallback en caso de que el controlador no esté disponible
+                    this.datosPresupuesto = datosCrudos;
+                }
+                
+                console.log('Datos del presupuesto procesados');
+                
+                // Verificar la estructura de datos
+                if (this.datosPresupuesto.puntos_de_venta) {
+                    console.log(`Encontrados ${this.datosPresupuesto.puntos_de_venta.length} puntos de venta`);
+                    
+                    // Verificar escaparates
+                    let totalEscaparates = 0;
+                    let totalElementos = 0;
+                    
+                    // Procesar PDVs de forma secuencial para evitar sobrecarga
+                    for (let i = 0; i < this.datosPresupuesto.puntos_de_venta.length; i++) {
+                        const pdv = this.datosPresupuesto.puntos_de_venta[i];
+                        console.log(`Procesando PDV ${i}...`);
+                        
+                        if (pdv.escaparates && Array.isArray(pdv.escaparates)) {
+                            console.log(`PDV ${i}: ${pdv.escaparates.length} escaparates`);
+                            totalEscaparates += pdv.escaparates.length;
+                            
+                            // Verificar elementos
+                            for (let j = 0; j < pdv.escaparates.length; j++) {
+                                const escaparate = pdv.escaparates[j];
+                                if (escaparate.elementos && Array.isArray(escaparate.elementos)) {
+                                    console.log(`PDV ${i}, Escaparate ${j}: ${escaparate.elementos.length} elementos`);
+                                    totalElementos += escaparate.elementos.length;
+                                } else if (escaparate.elemento_de_escaparate) {
+                                    console.log(`PDV ${i}, Escaparate ${j}: 1 elemento_de_escaparate`);
+                                    totalElementos += 1;
+                                } else {
+                                    console.log(`PDV ${i}, Escaparate ${j}: Sin elementos`);
+                                }
+                            }
+                        } else {
+                            console.log(`PDV ${i}: Sin escaparates`);
+                        }
+                    }
+                    
+                    console.log(`Total: ${totalEscaparates} escaparates, ${totalElementos} elementos`);
+                }
+                
+                // Inicializar la UI con los datos
                 this.inicializarDatosCliente();
                 this.inicializarPuntosDeVenta();
+            } else {
+                console.error('Formato de respuesta incorrecto:', responseData);
             }
             
         } catch (error) {
             console.error('Error al cargar datos del presupuesto:', error);
+            alert('Error al cargar los datos del presupuesto. Por favor, intente de nuevo más tarde.');
         } finally {
             // Ocultar el spinner cuando se completa la carga (ya sea con éxito o con error)
             if (window.spinner) {
@@ -96,16 +156,27 @@ class PresupuestoLoader {
     }
     
     inicializarPuntosDeVenta() {
+        console.log('Inicializando puntos de venta...');
+        
         // Verificar si hay puntos de venta
-        if (!this.datosPresupuesto || !this.datosPresupuesto.puntos_de_venta) return;
+        if (!this.datosPresupuesto || !this.datosPresupuesto.puntos_de_venta) {
+            console.warn('No hay puntos de venta en los datos del presupuesto');
+            return;
+        }
         
         const pdvs = this.datosPresupuesto.puntos_de_venta;
         
-        if (!window.presupuestosTabla) return;
+        if (!window.presupuestosTabla) {
+            console.error('presupuestosTabla no está disponible');
+            return;
+        }
         
         // Limpiar el contenedor de PDVs
         const contenedorPDVs = document.getElementById('contenedor-pdvs');
-        if (!contenedorPDVs) return;
+        if (!contenedorPDVs) {
+            console.error('Contenedor de PDVs no encontrado');
+            return;
+        }
         
         contenedorPDVs.innerHTML = '';
         
@@ -113,109 +184,172 @@ class PresupuestoLoader {
         this.pdvsACargarse = pdvs.length;
         this.pdvsCargados = 0;
         
-        // Crear un PDV por cada punto de venta
-        pdvs.forEach((pdv, index) => {
-            window.presupuestosTabla.agregarNuevoPDV();
-            
-            // Esperar a que el DOM se actualice antes de cargar los datos
-            setTimeout(() => {
-                this.cargarDatosPDV(pdv, index);
-            }, 50);
-        });
+        console.log(`Creando ${pdvs.length} puntos de venta de forma secuencial...`);
+        
+        if (!window.controladorCarga) {
+            console.error('ControladorCarga no está disponible');
+            return;
+        }
+        
+        // Configurar los callbacks necesarios
+        const callbacks = {
+            agregarPDV: () => window.presupuestosTabla.agregarNuevoPDV(),
+            cargarDatosPDV: async (pdvData, pdvIndex) => await this.cargarDatosPDV(pdvData, pdvIndex),
+            registrarPDVCargado: () => this.registrarPDVCargado()
+        };
+        
+        // Iniciar el procesamiento secuencial de PDVs
+        window.controladorCarga.procesarPDVsSecuencial(pdvs, callbacks);
     }
     
-    cargarDatosPDV(pdvData, pdvIndex) {
+    async cargarDatosPDV(pdvData, pdvIndex) {
+        console.log(`Cargando datos del PDV ${pdvIndex}:`, pdvData);
+        
         if (!pdvData) {
+            console.warn(`PDV ${pdvIndex}: No hay datos para cargar`);
             this.registrarPDVCargado();
             return;
         }
         
         const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
         if (!pdvDiv) {
+            console.error(`PDV ${pdvIndex}: No se encontró el contenedor en el DOM`);
             this.registrarPDVCargado();
             return;
         }
         
-        // Cargar datos generales del PDV si existen
-        this.cargarDatosGeneralesPDV(pdvDiv, pdvData);
-        
-        // Cargar escaparates si existen
-        if (pdvData.escaparates && pdvData.escaparates.length > 0) {
-            // Los escaparates permanecen ocultos por defecto aunque haya datos
-            // El usuario debe hacer clic en "Desplegar escaparates" para verlos       
-            pdvData.escaparates.forEach((escaparate, escaparateIndex) => {
-                this.agregarYCargarEscaparate(pdvIndex, escaparate, escaparateIndex);
-            });
+        try {
+            // Cargar datos generales del PDV si existen
+            this.cargarDatosGeneralesPDV(pdvDiv, pdvData);
+            
+            // Cargar escaparates si existen
+            if (pdvData.escaparates && pdvData.escaparates.length > 0) {
+                console.log(`PDV ${pdvIndex}: Cargando ${pdvData.escaparates.length} escaparates`);
+                
+                // Los escaparates permanecen ocultos por defecto aunque haya datos
+                // El usuario debe hacer clic en "Desplegar escaparates" para verlos       
+                if (!window.controladorCarga) {
+                    console.error('ControladorCarga no está disponible');
+                    return;
+                }
+                
+                // Configurar los callbacks necesarios
+                const callbacks = {
+                    agregarYCargarEscaparate: async (pdvIdx, escaparate, escaparateIdx) => 
+                        await this.agregarYCargarEscaparate(pdvIdx, escaparate, escaparateIdx)
+                };
+                
+                // Iniciar el procesamiento secuencial de escaparates
+                window.controladorCarga.procesarEscaparatesSecuencial(pdvData.escaparates, pdvIndex, callbacks);
+            } else {
+                console.log(`PDV ${pdvIndex}: No tiene escaparates`);
+            }
+            
+            // Recalcular totales del PDV usando el servicio de calculadora
+            if (window.calculadora) {
+                window.calculadora.actualizarTotalPDV(pdvIndex);
+            }
+        } catch (err) {
+            console.error(`Error general al cargar PDV ${pdvIndex}:`, err);
+        } finally {
+            // Registrar que este PDV se ha cargado
+            this.registrarPDVCargado();
         }
-        
-        // Recalcular totales del PDV usando el servicio de calculadora
-        if (window.calculadora) {
-            window.calculadora.actualizarTotalPDV(pdvIndex);
-        }
-        
-        // Registrar que este PDV se ha cargado
-        this.registrarPDVCargado();
     }
     
     cargarDatosGeneralesPDV(pdvDiv, pdvData) {
-        // Cargar Isla si existe
-        if (pdvData.Isla) {
-            const islaSelect = pdvDiv.querySelector('.isla-pdv');
-            if (islaSelect) islaSelect.value = pdvData.Isla;
-        }
-        
-        // Cargar Montaje si existe
-        if (pdvData.Montaje !== undefined) {
-            const montajeInput = pdvDiv.querySelector('.montaje-pdv');
-            if (montajeInput) montajeInput.value = pdvData.Montaje;
-        }
-        
-        // Cargar OBS si existe
-        if (pdvData.OBS) {
-            const obsInput = pdvDiv.querySelector('.obs-pdv');
-            if (obsInput) obsInput.value = pdvData.OBS;
-        }
-        
-        // Cargar enlace de fotos si existe en las líneas
-        if (pdvData.lineas && Array.isArray(pdvData.lineas) && pdvData.lineas.length > 0) {
-            // Buscar el primer enlace de fotos disponible
-            const enlaceFotos = pdvData.lineas.find(linea => linea.Fotos)?.Fotos;
+        try {
+            // Cargar Isla si existe
+            if (pdvData.Isla) {
+                const islaSelect = pdvDiv.querySelector('.isla-pdv');
+                if (islaSelect) islaSelect.value = pdvData.Isla;
+            }
             
-            if (enlaceFotos) {
-                // Buscar el contenedor de enlaces de fotos
-                const enlaceFotosContainer = pdvDiv.querySelector('.enlace-fotos-container');
-                if (enlaceFotosContainer) {
-                    // Crear el enlace HTML
-                    enlaceFotosContainer.innerHTML = `
-                        <a href="${enlaceFotos}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
-                            <i class="fas fa-images mr-1"></i> Ver fotos
-                        </a>
-                    `;
+            // Cargar Montaje si existe
+            if (pdvData.Montaje !== undefined) {
+                const montajeInput = pdvDiv.querySelector('.montaje-pdv');
+                if (montajeInput) montajeInput.value = pdvData.Montaje;
+            } else if (pdvData.montaje !== undefined) {
+                const montajeInput = pdvDiv.querySelector('.montaje-pdv');
+                if (montajeInput) montajeInput.value = pdvData.montaje;
+            }
+            
+            // Cargar OBS si existe
+            if (pdvData.OBS) {
+                const obsInput = pdvDiv.querySelector('.obs-pdv');
+                if (obsInput) obsInput.value = pdvData.OBS;
+            }
+            
+            // Cargar enlace de fotos si existe en las líneas
+            if (pdvData.lineas && Array.isArray(pdvData.lineas) && pdvData.lineas.length > 0) {
+                // Buscar el primer enlace de fotos disponible
+                let enlaceFotos = null;
+                
+                // Recorrer todas las líneas buscando la primera que tenga fotos
+                for (let i = 0; i < Math.min(pdvData.lineas.length, 20); i++) {
+                    const linea = pdvData.lineas[i];
+                    if (linea && linea.Fotos) {
+                        enlaceFotos = linea.Fotos;
+                        break;
+                    }
+                }
+                
+                if (enlaceFotos) {
+                    // Buscar el contenedor de enlaces de fotos
+                    const enlaceFotosContainer = pdvDiv.querySelector('.enlace-fotos-container');
+                    if (enlaceFotosContainer) {
+                        // Crear el enlace HTML
+                        enlaceFotosContainer.innerHTML = `
+                            <a href="${enlaceFotos}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                <i class="fas fa-images mr-1"></i> Ver fotos
+                            </a>
+                        `;
+                    }
                 }
             }
+        } catch (error) {
+            console.error('Error al cargar datos generales del PDV:', error);
         }
     }
     
-    agregarYCargarEscaparate(pdvIndex, escaparateData, escaparateIndex) {
-        // Crear escaparate si no existe
-        this.agregarEscaparateSiNoExiste(pdvIndex, escaparateIndex);
+    async agregarYCargarEscaparate(pdvIndex, escaparateData, escaparateIndex) {
+        console.log(`Agregando escaparate ${escaparateIndex} al PDV ${pdvIndex}`);
         
-        // Obtener el contenedor del escaparate
-        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-        if (!pdvDiv) return;
-        
-        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-        if (!escaparateItem) return;
-        
-        // Cargar datos básicos del escaparate
-        this.cargarDatosEscaparate(escaparateItem, escaparateData);
-        
-        // Cargar elementos del escaparate
-        this.cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData);
-        
-        // Actualizar totales usando la calculadora
-        if (window.calculadora) {
-            window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+        try {
+            // Crear escaparate si no existe
+            this.agregarEscaparateSiNoExiste(pdvIndex, escaparateIndex);
+            
+            // Obtener el contenedor del escaparate
+            const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
+            if (!pdvDiv) {
+                console.error(`No se encontró el PDV ${pdvIndex} en el DOM`);
+                return;
+            }
+            
+            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
+            if (!escaparateItem) {
+                console.error(`No se encontró el escaparate ${escaparateIndex} en el PDV ${pdvIndex}`);
+                return;
+            }
+            
+            // Cargar datos básicos del escaparate
+            this.cargarDatosEscaparate(escaparateItem, escaparateData);
+            
+            // Simplificar datos de elementos si son demasiados
+            if (escaparateData.elementos && Array.isArray(escaparateData.elementos) && escaparateData.elementos.length > 10) {
+                console.warn(`El escaparate ${escaparateIndex} tiene ${escaparateData.elementos.length} elementos. Limitando a 10 para mejorar rendimiento.`);
+                escaparateData.elementos = escaparateData.elementos.slice(0, 10);
+            }
+            
+            // Cargar elementos del escaparate
+            this.cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData);
+            
+            // Actualizar totales usando la calculadora
+            if (window.calculadora) {
+                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+            }
+        } catch (error) {
+            console.error(`Error al agregar y cargar escaparate ${escaparateIndex} en PDV ${pdvIndex}:`, error);
         }
     }
     
@@ -275,93 +409,105 @@ class PresupuestoLoader {
         return '';
     }
     
-    cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData) {
-        // Si hay elementos en la respuesta, usamos esos
-        if (escaparateData.elementos && Array.isArray(escaparateData.elementos)) {
-            const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-            if (!pdvDiv) return;
-            
-            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-            if (!escaparateItem) return;
-            
-            const elementosContainer = escaparateItem.querySelector('.elementos-container');
-            if (!elementosContainer) return;
-            
-            // Obtener elementos existentes
-            const elementosExistentes = elementosContainer.querySelectorAll('tr');
-            
-            // Si no hay suficientes filas, agregar las necesarias
-            while (elementosExistentes.length < escaparateData.elementos.length) {
-                if (window.presupuestosTabla) {
-                    window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
+    async cargarElementosEscaparate(pdvIndex, escaparateIndex, escaparateData) {
+        console.log(`Cargando elementos para escaparate ${escaparateIndex} del PDV ${pdvIndex}`);
+        
+        try {
+            // Si hay elementos en la respuesta, usamos esos
+            if (escaparateData.elementos && Array.isArray(escaparateData.elementos)) {
+                if (!window.controladorCarga) {
+                    console.error('ControladorCarga no está disponible');
+                    return;
                 }
-            }
-            
-            // Obtener la lista actualizada de elementos
-            const elementosRows = elementosContainer.querySelectorAll('tr');
-            
-            // Cargar datos en cada fila
-            escaparateData.elementos.forEach((elemento, elementoIndex) => {
-                if (elementoIndex < elementosRows.length) {
-                    this.cargarDatosElemento(elementosRows[elementoIndex], elemento, pdvIndex, escaparateIndex);
-                }
-            });
-            
-            // Actualizar totales
-            if (window.calculadora) {
-                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
-            }
-        } 
-        // Si no hay elementos definidos pero hay un elemento_de_escaparate, usamos ese
-        else if (escaparateData.elemento_de_escaparate) {
-            const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIndex}"]`);
-            if (!pdvDiv) return;
-            
-            const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIndex}"]`);
-            if (!escaparateItem) return;
-            
-            const elementosContainer = escaparateItem.querySelector('.elementos-container');
-            if (!elementosContainer) return;
-            
-            // Asegurarnos de que haya al menos una fila de elemento
-            if (elementosContainer.querySelectorAll('tr').length === 0) {
-                if (window.presupuestosTabla) {
-                    window.presupuestosTabla.agregarElemento(pdvIndex, escaparateIndex);
-                }
-            }
-            
-            // Obtener la primera fila
-            const elementoRow = elementosContainer.querySelector('tr');
-            if (elementoRow) {
-                // Acceder a la información del elemento
-                const elementoInfo = escaparateData.elemento_de_escaparate;
                 
-                // Buscar el nombre descriptivo del elemento
-                const nombreElemento = this.buscarNombreElemento(elementoInfo.id) || elementoInfo.name || '';
-                
-                // Buscar el elemento correspondiente en los elementos disponibles
-                const elementoId = elementoInfo.id;
-                const elementoEncontrado = window.presupuestosTabla.elementosExistentesDisponibles.find(
-                    elem => elem.id === elementoId
-                );
-                
-                // Crear un objeto con los datos del elemento_de_escaparate
-                const elementoData = {
-                    Nombre_del_elemento: nombreElemento,
-                    Nombre: escaparateData.Name || escaparateData.Nombre_del_escaparate || '',
-                    Alto: elementoEncontrado?.Alto_del_elemento || elementoEncontrado?.datosOriginales?.Alto_del_elemento || '',
-                    Ancho: elementoEncontrado?.Ancho_del_elemento || elementoEncontrado?.datosOriginales?.Ancho_del_elemento || '',
-                    Elemento: escaparateData.elemento_de_escaparate
+                // Configurar los callbacks necesarios
+                const callbacks = {
+                    obtenerElementosContainer: (pdvIdx, escaparateIdx) => {
+                        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIdx}"]`);
+                        if (!pdvDiv) return null;
+                        
+                        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIdx}"]`);
+                        if (!escaparateItem) return null;
+                        
+                        return escaparateItem.querySelector('.elementos-container');
+                    },
+                    agregarElemento: (pdvIdx, escaparateIdx) => 
+                        window.presupuestosTabla.agregarElemento(pdvIdx, escaparateIdx),
+                    cargarDatosElemento: (elementoRow, elementoFormateado, pdvIdx, escaparateIdx) => 
+                        this.cargarDatosElemento(elementoRow, elementoFormateado, pdvIdx, escaparateIdx),
+                    actualizarTotalEscaparate: (pdvIdx, escaparateIdx) => 
+                        window.calculadora && window.calculadora.actualizarTotalEscaparate(pdvIdx, escaparateIdx)
                 };
                 
-                // Cargar los datos en la fila
-                this.cargarDatosElemento(elementoRow, elementoData, pdvIndex, escaparateIndex);
+                // Usar el controlador para cargar elementos de forma optimizada
+                await window.controladorCarga.cargarElementosOptimizado(
+                    escaparateData, pdvIndex, escaparateIndex, callbacks
+                );
+                
+            } 
+            // Si no hay elementos definidos pero hay un elemento_de_escaparate, usamos ese
+            else if (escaparateData.elemento_de_escaparate) {
+                if (!window.controladorCarga) {
+                    console.error('ControladorCarga no está disponible');
+                    return;
+                }
+                
+                // Configurar los callbacks necesarios
+                const callbacks = {
+                    obtenerElementosContainer: (pdvIdx, escaparateIdx) => {
+                        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIdx}"]`);
+                        if (!pdvDiv) return null;
+                        
+                        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIdx}"]`);
+                        if (!escaparateItem) return null;
+                        
+                        return escaparateItem.querySelector('.elementos-container');
+                    },
+                    agregarElemento: (pdvIdx, escaparateIdx) => 
+                        window.presupuestosTabla.agregarElemento(pdvIdx, escaparateIdx),
+                    buscarNombreElemento: (elementoId) => this.buscarNombreElemento(elementoId),
+                    cargarDatosElemento: (elementoRow, elementoFormateado, pdvIdx, escaparateIdx) => 
+                        this.cargarDatosElemento(elementoRow, elementoFormateado, pdvIdx, escaparateIdx),
+                    actualizarTotalEscaparate: (pdvIdx, escaparateIdx) => 
+                        window.calculadora && window.calculadora.actualizarTotalEscaparate(pdvIdx, escaparateIdx)
+                };
+                
+                // Usar el controlador para cargar el elemento de escaparate
+                await window.controladorCarga.cargarElementoDeEscaparate(
+                    escaparateData, pdvIndex, escaparateIndex, callbacks
+                );
             }
-            
-            // Actualizar totales
-            if (window.calculadora) {
-                window.calculadora.actualizarTotalEscaparate(pdvIndex, escaparateIndex);
+            // Si no hay elementos ni elemento_de_escaparate, crear al menos un elemento vacío
+            else {
+                if (!window.controladorCarga) {
+                    console.error('ControladorCarga no está disponible');
+                    return;
+                }
+                
+                // Configurar los callbacks necesarios
+                const callbacks = {
+                    obtenerElementosContainer: (pdvIdx, escaparateIdx) => {
+                        const pdvDiv = document.querySelector(`.tabla-pdv[data-pdv-index="${pdvIdx}"]`);
+                        if (!pdvDiv) return null;
+                        
+                        const escaparateItem = pdvDiv.querySelector(`.escaparate-item[data-escaparate-index="${escaparateIdx}"]`);
+                        if (!escaparateItem) return null;
+                        
+                        return escaparateItem.querySelector('.elementos-container');
+                    },
+                    agregarElemento: (pdvIdx, escaparateIdx) => 
+                        window.presupuestosTabla.agregarElemento(pdvIdx, escaparateIdx),
+                    actualizarTotalEscaparate: (pdvIdx, escaparateIdx) => 
+                        window.calculadora && window.calculadora.actualizarTotalEscaparate(pdvIdx, escaparateIdx)
+                };
+                
+                // Usar el controlador para crear un elemento vacío
+                await window.controladorCarga.crearElementoVacio(
+                    pdvIndex, escaparateIndex, callbacks
+                );
             }
+        } catch (error) {
+            console.error(`Error general al cargar elementos del escaparate ${escaparateIndex} en PDV ${pdvIndex}:`, error);
         }
     }
     
@@ -376,16 +522,35 @@ class PresupuestoLoader {
         if (elementoData.Alto !== undefined) {
             const altoInput = elementoRow.querySelector('.alto');
             if (altoInput) altoInput.value = elementoData.Alto;
+        } else if (elementoData.Alto_del_elemento !== undefined) {
+            const altoInput = elementoRow.querySelector('.alto');
+            if (altoInput) altoInput.value = elementoData.Alto_del_elemento;
         }
         
         // Cargar Ancho si existe
         if (elementoData.Ancho !== undefined) {
             const anchoInput = elementoRow.querySelector('.ancho');
             if (anchoInput) anchoInput.value = elementoData.Ancho;
+        } else if (elementoData.Ancho_del_elemento !== undefined) {
+            const anchoInput = elementoRow.querySelector('.ancho');
+            if (anchoInput) anchoInput.value = elementoData.Ancho_del_elemento;
         }
 
+        // Cargar Material y Precio/M.Prima si existe directamente en el objeto
+        if (elementoData.Material) {
+            const materialSelect = elementoRow.querySelector('.material');
+            if (materialSelect) {
+                materialSelect.value = elementoData.Material;
+            }
+            
+            // Cargar el Precio/M.Prima si existe directamente
+            const precioMPInput = elementoRow.querySelector('.precio-mp');
+            if (precioMPInput && elementoData.Precio_MP) {
+                precioMPInput.value = elementoData.Precio_MP;
+            }
+        }
         // Cargar Material y Precio/M.Prima si existe elemento con materiales
-        if (elementoData.Elemento && elementoData.Elemento.materiales && elementoData.Elemento.materiales.length > 0) {
+        else if (elementoData.Elemento && elementoData.Elemento.materiales && elementoData.Elemento.materiales.length > 0) {
             const material = elementoData.Elemento.materiales[0]; // Tomamos el primer material
             
             // Cargar el Material
