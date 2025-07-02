@@ -36,6 +36,7 @@ class montadores_notion_service {
                 //Comprobamos que todos existen
                 const allFieldsExist = requiredFields.every(field => this.body.hasOwnProperty(field));
                 if (allFieldsExist) {
+                    // HAY QUE ADAPTAR TODO LO QUE SIGUE A LA PÁGINA DE MONTADORES DE NOTION PARA QUE SEA FUNCIONAL E IMPLEMENTABLE - ANDRÉS
                     const notion = new Client({
                         auth: process.env.API_KEY,
                     });

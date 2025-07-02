@@ -1,3 +1,4 @@
+//CREO QUE LA LÓGICA AQUÍ DIO MUCHAS VUELTAS, NO ES MÁS PRÁCTICO SIMPLEMENTE LUEGO DE CREAR LA OT EN EL CRM, OBTENER EL CÓDGIO DE LA OT PARA CREARLA EN MONGO DB Y NOTION? ASÍ NOS AHORRARÍAMOS LLAMADAS DE ACTUALIZACIÓN A MONGO Y NOTION - ANDRÉS
 import axios from 'axios';
 import MongoDB from './../DB/MongoDB.js'; // Importamos la clase MongoDB
 import Zoho from '../zoho_api/Zoho.js'; // Importamos la clase ZohoCRM

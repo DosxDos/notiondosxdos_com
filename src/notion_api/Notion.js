@@ -1,3 +1,4 @@
+// ESTÁ GENIAL ESTE COMIENZO DE ABSTRACCIÓN PARA LA API DE NOTION, NOS AHORRARÁ MUCHO CÓDIGO REPETIDO Y NOS PERMITIRÁ MANTENER UNA ESTRUCTURA MÁS LIMPIA Y ORGANIZADA - HAY QUE CONTINUAR CON ESTA ABSTRACCIÓN - ANDRÉS
 import { Client } from "@notionhq/client";
 import { diccionarioCamposNotion } from "./../constantes/constantes.js";
 
