@@ -101,7 +101,7 @@ a3erp.get('cliente?externalFields=true')
 // GET DE CLIENTE USANDO FILTROS (sintaxis OData v3)
 /*
 const a3erp = new a3Erp();
-a3erp.get("cliente?externalFields=true&$filter=NIF eq 'A28050359'")
+a3erp.get("cliente?externalFields=true&$filter=NIF eq 'Y0049134C'")
     .then(response => console.log(response))
     .catch(error => console.error(error));
 */
