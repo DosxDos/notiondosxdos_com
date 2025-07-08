@@ -1,10 +1,15 @@
 import respuesta from '../utils/respuesta_util.js';
 import a3Erp from '../services/a3_erp_service.js';
+import clientes_crmzoho_service from '../services/clientes_crmzoho_service.js';
 import Zoho from '../zoho_api/Zoho.js'; // Ajusta la ruta según la ubicación real del archivo Zoho.js
 import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config(); // Cargar variables de entorno
 import MongoDB from '../DB/MongoDB.js';
+// Librerías para manejar archivos y rutas
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 class a3Erp_controller {
     constructor(body) {
@@ -26,6 +31,7 @@ class a3Erp_controller {
             const respuestas = new respuesta;
             const response = {};
             const respuestaFinal = {};
+            let clienteEnA3 = null; // Variable para almacenar el cliente creado en A3ERP
             mongo.connect()
                 .then(async (result) => {
                     //Tratamos los datos del cuerpo para que sea compatible con A3
@@ -152,19 +158,133 @@ class a3Erp_controller {
                             // Si en el sincronizador de Mongo no hay errores entonces creamos el cliente en A3Erp
                             if (result) {
                                 _a3Erp.post("cliente", this.body)
-                                    .then((responseA3) => {
-                                        console.log("Respuesta de A3ERP: ", responseA3);
-                                        respuestas.message += " - Respuesta recibida de A3ERP";
-                                        respuestaFinal.a3ErpResponse = responseA3;
-                                        respuestas.data = respuestaFinal;
-                                        mongo.close();
-                                        resolve(respuestas._200());
+                                    .then(async (responseA3) => {
+                                        if (responseA3) {
+                                            console.log("Respuesta de A3ERP: ", responseA3);
+                                            respuestas.message += " - Respuesta recibida de A3ERP";
+                                            respuestaFinal.a3ErpResponse = responseA3;
+                                            // Consultamos en A3 ERP los datos del cliente creado, ya que la API de a3ERP no devuelve todos los datos del cliente creado, sólo devuelve los campos enviados en el POST
+                                            const clienteGetA3Response = await _a3Erp.get(`cliente?externalFields=true&$filter=NIF eq '${this.body.NIF}'`);
+                                            if (clienteGetA3Response) {
+                                                console.log("Respuesta de GET CLIENTE A3ERP: ", clienteGetA3Response);
+                                                respuestas.message += " - Respuesta de GET CLIENTE A3ERP recibida";
+                                                clienteEnA3 = clienteGetA3Response.PageData[0]; // Guardamos el cliente creado en A3ERP
+                                                console.log("Cliente creado en A3ERP: ", clienteEnA3);
+                                                respuestaFinal.a3ErpGetResponse = clienteGetA3Response;
+                                            } else {
+                                                console.log("No se encontró el cliente en A3ERP tras la creación: ", clienteGetA3Response);
+                                                respuestas.message += " - No se encontró el cliente en A3ERP tras la creación";
+                                                respuestaFinal.a3ErpGetResponse = {
+                                                    status: false,
+                                                    message: "No se encontró el cliente en A3ERP tras la creación",
+                                                    code: 404,
+                                                    data: null
+                                                }
+                                                mongo.close();
+                                                respuestas.data = respuestaFinal;
+                                                // LOG DE LA RESPUESTA FINAL
+                                                const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                                const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                                const messageLog = JSON.stringify(respuestaFinal);
+                                                const timestamp = new Date().toISOString();
+                                                const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                                fs.appendFileSync(filenameLog, logEntry);
+                                                resolve(respuestas._404());
+                                            }
+                                            const clientesCrmZoho = new clientes_crmzoho_service;
+                                            // Obtenemos los datos del cliente en CRM ZOHO por NIF, con el fin de obtener el id del cliente en CRM ZOHO
+                                            const clienteGetCrmResponse = await clientesCrmZoho.get_cliente(this.body.NIF);
+                                            if (clienteGetCrmResponse.status) {
+                                                console.log("Respuesta de GET CLIENTE CRM: ", clienteGetCrmResponse);
+                                                respuestas.message += " - Respuesta de GET CLIENTE CRM recibida";
+                                                respuestaFinal.clienteGetCrmResponse = clienteGetCrmResponse;
+                                                // Actualizamos el cliente en CRM ZOHO con la cuenta contable de A3ERP
+                                                const cuentaContableCliente = clienteEnA3.Cuenta;
+                                                const actualizarClienteCrm = {
+                                                    id: clienteGetCrmResponse.data.id,
+                                                    N1: cuentaContableCliente // N1 es el campo que contiene la cuenta contable en CRM ZOHO
+                                                }
+                                                const clientePutCrmResponse = await clientesCrmZoho.put_cliente(actualizarClienteCrm);
+                                                if (clientePutCrmResponse.status) {
+                                                    console.log("Respuesta de PUT CLIENTE CRM: ", clientePutCrmResponse);
+                                                    respuestas.message += " - Respuesta de PUT CLIENTE CRM recibida";
+                                                    respuestaFinal.clientePutCrmResponse = clientePutCrmResponse;
+                                                    mongo.close();
+                                                    respuestas.data = respuestaFinal;
+                                                    // LOG DE LA RESPUESTA FINAL
+                                                    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                                    const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                                    const messageLog = JSON.stringify(respuestaFinal);
+                                                    const timestamp = new Date().toISOString();
+                                                    const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                                    fs.appendFileSync(filenameLog, logEntry);
+                                                    resolve(respuestas._200());
+                                                } else {
+                                                    console.log("Error en la respuesta de PUT CLIENTE CRM: ", clientePutCrmResponse);
+                                                    respuestas.message += " - Error en la Respuesta de PUT CLIENTE CRM";
+                                                    respuestaFinal.clientePutCrmResponse = clientePutCrmResponse;
+                                                    mongo.close();
+                                                    respuestas.data = respuestaFinal;
+                                                    // LOG DE LA RESPUESTA FINAL
+                                                    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                                    const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                                    const messageLog = JSON.stringify(respuestaFinal);
+                                                    const timestamp = new Date().toISOString();
+                                                    const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                                    fs.appendFileSync(filenameLog, logEntry);
+                                                    resolve(respuestas._500());
+                                                }
+                                            } else {
+                                                console.log("Respuesta no exitosa de GET CLIENTE CRM: ", clienteGetCrmResponse);
+                                                console.log("Respuesta de PUT CLIENTE CRM: ", null);
+                                                respuestas.message += " - Respuesta no exitosa de GET CLIENTE CRM.";
+                                                respuestaFinal.clienteGetCrmResponse = clienteGetCrmResponse;
+                                                respuestaFinal.clientePutCrmResponse = null;
+                                                mongo.close();
+                                                respuestas.data = respuestaFinal;
+                                                // LOG DE LA RESPUESTA FINAL
+                                                const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                                const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                                const messageLog = JSON.stringify(respuestaFinal);
+                                                const timestamp = new Date().toISOString();
+                                                const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                                fs.appendFileSync(filenameLog, logEntry);
+                                                resolve(respuestas._404());
+                                            }
+                                        } else {
+                                            console.log("Respuesta de A3ERP: ", responseA3);
+                                            respuestas.message += " - Respuesta no exitosa de A3ERP";
+                                            respuestaFinal.a3ErpResponse = {
+                                                status: false,
+                                                message: "No se pudo crear el cliente en A3ERP",
+                                                code: 500,
+                                                data: responseA3
+                                            }
+                                            mongo.close();
+                                            respuestas.data = respuestaFinal;
+                                            // LOG DE LA RESPUESTA FINAL
+                                            const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                            const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                            const messageLog = JSON.stringify(respuestaFinal);
+                                            const timestamp = new Date().toISOString();
+                                            const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                            fs.appendFileSync(filenameLog, logEntry);
+                                            resolve(respuestas._500());
+                                        }
                                     })
                                     .catch((error) => {
                                         console.error("Error al crear el cliente en A3ERP: ", error);
                                         respuestas.message = "Error al crear el cliente en A3ERP";
                                         respuestas.data = error.message;
                                         mongo.close();
+                                        // LOG DE LA RESPUESTA FINAL
+                                        respuestaFinal.error = error;
+                                        const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                        const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                        const messageLog = JSON.stringify(respuestaFinal);
+                                        const timestamp = new Date().toISOString();
+                                        const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                        fs.appendFileSync(filenameLog, logEntry);
                                         resolve(respuestas._500());
                                     });
                             } else {
@@ -172,6 +292,14 @@ class a3Erp_controller {
                                 respuestas.message += "El cliente ya existe en el sincronizador de MONGODB";
                                 respuestas.data = null;
                                 mongo.close();
+                                // LOG DE LA RESPUESTA FINAL
+                                respuestaFinal.error = respuestas.message;
+                                const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                                const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                                const messageLog = JSON.stringify(respuestaFinal);
+                                const timestamp = new Date().toISOString();
+                                const logEntry = `[${timestamp}] ${messageLog}\n`;
+                                fs.appendFileSync(filenameLog, logEntry);
                                 resolve(respuestas._200());
                             }
                         })
@@ -180,6 +308,14 @@ class a3Erp_controller {
                             respuestas.message = "Error al crear el cliente en MongoDB";
                             respuestas.data = error.message;
                             mongo.close();
+                            // LOG DE LA RESPUESTA FINAL
+                            respuestaFinal.error = error;
+                            const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                            const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                            const messageLog = JSON.stringify(respuestaFinal);
+                            const timestamp = new Date().toISOString();
+                            const logEntry = `[${timestamp}] ${messageLog}\n`;
+                            fs.appendFileSync(filenameLog, logEntry);
                             resolve(respuestas._500());
                         });
                 })
@@ -188,6 +324,14 @@ class a3Erp_controller {
                     respuestas.message = "Error al conectar con MongoDB";
                     respuestas.data = error.message;
                     mongo.close();
+                    // LOG DE LA RESPUESTA FINAL
+                    respuestaFinal.error = error;
+                    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+                    const filenameLog = path.join(currentDir, 'logs/a3ErpController.txt');
+                    const messageLog = JSON.stringify(respuestaFinal);
+                    const timestamp = new Date().toISOString();
+                    const logEntry = `[${timestamp}] ${messageLog}\n`;
+                    fs.appendFileSync(filenameLog, logEntry);
                     resolve(respuestas._500());
                 });
         });
@@ -200,7 +344,7 @@ export default a3Erp_controller;
 /*
 const data = {
     Nombre: "Andrés Felipe González Builes",
-    NIF: "Y0049134C",
+    NIF: "Y0049134C4",
     Direccion: "Calle Juan Manuel Durán González 52, Escalera 2 , Piso 4E , Las Palmas de Gran Canaria",
     TipoImpuesto: "IGIC7",
     Email: "anfego1@hotmail.com",
