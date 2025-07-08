@@ -8,3 +8,4 @@ presupuesto_generado.pdf
 #Hay que descachear los archivos de pruebas
 src/tests
 uploads
+src/controllers/logs
