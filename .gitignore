@@ -8,4 +8,5 @@ presupuesto_generado.pdf
 #Hay que descachear los archivos de pruebas
 src/tests
 uploads
+#Ignorar los logs de los controladores
 src/controllers/logs
