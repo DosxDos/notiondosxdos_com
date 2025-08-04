@@ -114,7 +114,7 @@ const ejecutarWebHook = async () => {
 // Función para ejecutar git pull
 function executeGitPull() {
   return new Promise((resolve) => {
-    const projectDir = 'P:\\xampp\\htdocs\\notiondosxdos';
+    const projectDir = 'P:\\apache\\htdocs\\notiondosxdos';
     const gitPath = 'C:\\Program Files\\Git\\cmd\\git.exe';
 
     exec(`powershell -Command "& {cd '${projectDir}'; & '${gitPath}' pull}"`, (error, stdout, stderr) => {
